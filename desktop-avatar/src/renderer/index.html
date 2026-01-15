@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:">
   <title>Desktop Avatar</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -12,23 +11,215 @@
     <canvas id="avatar-canvas"></canvas>
   </div>
 
-  <div id="debug-overlay" style="display: none;">
-    <div id="debug-info"></div>
-  </div>
-
   <script>
-    // Load Three.js from node_modules
-    const THREE = require('three');
-    const { GLTFLoader } = require('three/examples/jsm/loaders/GLTFLoader.js');
-    const { OrbitControls } = require('three/examples/jsm/controls/OrbitControls.js');
-    const path = require('path');
+    // Cargar dependencias de Node.js
+    const { ipcRenderer } = require('electron');
+    const nodePath = require('path');
+    const nodeFs = require('fs');
 
-    // Make available globally
+    // Hacer disponibles globalmente
+    window.ipcRenderer = ipcRenderer;
+    window.nodePath = nodePath;
+    window.nodeFs = nodeFs;
+    window.__dirname = __dirname;
+  </script>
+
+  <script type="module">
+    // Importar Three.js como ES Module
+    import * as THREE from '../node_modules/three/build/three.module.js';
+    import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+
     window.THREE = THREE;
     window.GLTFLoader = GLTFLoader;
-    window.OrbitControls = OrbitControls;
-    window.nodePath = path;
+
+    // Iniciar la aplicación después de cargar Three.js
+    initAvatar();
   </script>
-  <script src="renderer-simple.js"></script>
+
+  <script>
+    // Variables globales
+    let scene, camera, renderer, model, mixer, clock;
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+
+    async function initAvatar() {
+      console.log('Inicializando Desktop Avatar...');
+
+      // Ruta al modelo
+      const modelsPath = window.nodePath.join(window.__dirname, '../../assets/models');
+      const modelPath = window.nodePath.join(modelsPath, 'avatar.glb');
+
+      console.log('Buscando modelo en:', modelPath);
+
+      // Verificar si existe
+      if (!window.nodeFs.existsSync(modelPath)) {
+        showError('No se encontró avatar.glb');
+        console.error('Archivo no encontrado:', modelPath);
+        return;
+      }
+
+      console.log('¡Archivo encontrado!');
+
+      // Configurar Three.js
+      setupThreeJS();
+
+      // Cargar modelo
+      try {
+        await loadModel(modelPath);
+      } catch(e) {
+        console.error('Error cargando modelo:', e);
+        showError('Error: ' + e.message);
+      }
+
+      // Configurar controles
+      setupDragControls();
+
+      // Iniciar render loop
+      animate();
+    }
+
+    function setupThreeJS() {
+      const canvas = document.getElementById('avatar-canvas');
+      const THREE = window.THREE;
+
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+      camera.position.set(0, 0.8, 2.5);
+      camera.lookAt(0, 0.8, 0);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        alpha: true,
+        antialias: true
+      });
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000, 0);
+
+      // Luces
+      scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      dirLight.position.set(1, 2, 2);
+      scene.add(dirLight);
+
+      const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      backLight.position.set(-1, 1, -1);
+      scene.add(backLight);
+
+      clock = new THREE.Clock();
+
+      console.log('Three.js configurado');
+    }
+
+    async function loadModel(modelPath) {
+      const THREE = window.THREE;
+      const GLTFLoader = window.GLTFLoader;
+
+      return new Promise((resolve, reject) => {
+        const loader = new GLTFLoader();
+
+        // Convertir a file:// URL
+        let fileUrl = 'file:///' + modelPath.replace(/\\/g, '/');
+        console.log('Cargando URL:', fileUrl);
+
+        loader.load(
+          fileUrl,
+          (gltf) => {
+            console.log('Modelo cargado:', gltf);
+
+            model = gltf.scene;
+            scene.add(model);
+
+            // Ajustar tamaño y posición
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 1.8 / maxDim;
+            model.scale.setScalar(scale);
+
+            // Reposicionar
+            box.setFromObject(model);
+            box.getCenter(center);
+            model.position.x = -center.x;
+            model.position.y = -box.min.y;
+            model.position.z = -center.z;
+
+            // Ajustar cámara
+            camera.position.set(0, size.y * scale * 0.5, 2.5);
+            camera.lookAt(0, size.y * scale * 0.4, 0);
+
+            // Animaciones
+            if (gltf.animations && gltf.animations.length > 0) {
+              mixer = new THREE.AnimationMixer(model);
+              const clip = gltf.animations[0];
+              mixer.clipAction(clip).play();
+              console.log('Animación:', clip.name);
+            }
+
+            console.log('¡Modelo listo!');
+            resolve(gltf);
+          },
+          (progress) => {
+            if (progress.total > 0) {
+              console.log('Cargando:', Math.round(progress.loaded / progress.total * 100) + '%');
+            }
+          },
+          (error) => {
+            console.error('Error GLTFLoader:', error);
+            reject(error);
+          }
+        );
+      });
+    }
+
+    function setupDragControls() {
+      const container = document.getElementById('avatar-container');
+
+      container.addEventListener('mousedown', async (e) => {
+        if (e.button !== 0) return;
+        isDragging = true;
+        const pos = await window.ipcRenderer.invoke('get-avatar-position');
+        dragOffset.x = e.screenX - pos.x;
+        dragOffset.y = e.screenY - pos.y;
+      });
+
+      document.addEventListener('mousemove', async (e) => {
+        if (!isDragging) return;
+        await window.ipcRenderer.invoke('set-avatar-position', {
+          x: e.screenX - dragOffset.x,
+          y: e.screenY - dragOffset.y
+        });
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (mixer) {
+        mixer.update(clock.getDelta());
+      }
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('avatar-container').innerHTML = `
+        <div style="color:white; background:rgba(200,0,0,0.9); padding:10px;
+                    font-family:Arial; font-size:11px; border-radius:5px; text-align:center;">
+          <b>Error</b><br>${msg}
+        </div>
+      `;
+    }
+  </script>
 </body>
 </html>

@@ -47,8 +47,7 @@ function createWindow() {
     hasShadow: false,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
-      preload: path.join(__dirname, '../preload/preload.js')
+      contextIsolation: false
     }
   });
 
