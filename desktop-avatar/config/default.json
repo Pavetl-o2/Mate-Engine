@@ -1,0 +1,43 @@
+{
+  "avatar": {
+    "width": 200,
+    "height": 300,
+    "scale": 1.0,
+    "mode": "auto"
+  },
+  "behavior": {
+    "alwaysOnTop": true,
+    "snapThreshold": 30,
+    "followWindowsOnMove": true,
+    "enableTaskbarSitting": true
+  },
+  "animations": {
+    "idleFrameRate": 6,
+    "transitionDuration": 200
+  },
+  "window": {
+    "startMinimized": false,
+    "rememberPosition": true
+  },
+  "debug": {
+    "enabled": false,
+    "showFPS": false,
+    "logWindowDetection": false
+  },
+  "future": {
+    "ai": {
+      "enabled": false,
+      "provider": "openai",
+      "model": "gpt-4"
+    },
+    "tts": {
+      "enabled": false,
+      "provider": "elevenlabs"
+    },
+    "integrations": {
+      "email": false,
+      "calendar": false,
+      "fileOrganizer": false
+    }
+  }
+}
