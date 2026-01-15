@@ -1,10 +1,12 @@
 /**
  * Preload Script - Secure bridge between main and renderer
- *
- * Exposes safe APIs to the renderer process via contextBridge
  */
 
 const { contextBridge, ipcRenderer } = require('electron');
+const path = require('path');
+
+// Get the correct assets path
+const assetsPath = path.join(__dirname, '../../assets');
 
 // Expose protected methods to renderer
 contextBridge.exposeInMainWorld('avatarAPI', {
@@ -26,16 +28,15 @@ contextBridge.exposeInMainWorld('avatarAPI', {
   setAlwaysOnTop: (value) => ipcRenderer.invoke('set-always-on-top', value),
   setIgnoreMouse: (ignore, options) => ipcRenderer.invoke('set-ignore-mouse', ignore, options),
 
-  // Events from main process
-  onWindowsUpdated: (callback) => {
-    ipcRenderer.on('windows-updated', (event, windows) => callback(windows));
-  },
+  // Paths
+  assetsPath: assetsPath,
+  modelsPath: path.join(assetsPath, 'models'),
 
   // Platform info
   platform: process.platform
 });
 
-// Notify renderer when DOM is ready
 window.addEventListener('DOMContentLoaded', () => {
-  console.log('Desktop Avatar renderer loaded');
+  console.log('Desktop Avatar loaded');
+  console.log('Assets path:', assetsPath);
 });

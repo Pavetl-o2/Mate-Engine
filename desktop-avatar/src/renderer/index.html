@@ -3,28 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:">
   <title>Desktop Avatar</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Main container for the avatar -->
   <div id="avatar-container">
-    <!-- Three.js canvas will be inserted here -->
     <canvas id="avatar-canvas"></canvas>
-
-    <!-- Fallback for 2D sprites -->
-    <div id="sprite-container" style="display: none;">
-      <img id="sprite-image" alt="Avatar Sprite">
-    </div>
   </div>
 
-  <!-- Debug overlay (hidden by default) -->
   <div id="debug-overlay" style="display: none;">
     <div id="debug-info"></div>
   </div>
 
-  <!-- Load scripts -->
-  <script src="renderer.js" type="module"></script>
+  <script>
+    // Load Three.js from node_modules
+    const THREE = require('three');
+    const { GLTFLoader } = require('three/examples/jsm/loaders/GLTFLoader.js');
+    const { OrbitControls } = require('three/examples/jsm/controls/OrbitControls.js');
+    const path = require('path');
+
+    // Make available globally
+    window.THREE = THREE;
+    window.GLTFLoader = GLTFLoader;
+    window.OrbitControls = OrbitControls;
+    window.nodePath = path;
+  </script>
+  <script src="renderer-simple.js"></script>
 </body>
 </html>
