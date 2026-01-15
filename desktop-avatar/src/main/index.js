@@ -17,8 +17,8 @@ let trayManager = null;
 
 // Avatar settings
 const AVATAR_CONFIG = {
-  width: 200,
-  height: 300,
+  width: 350,
+  height: 450,
   defaultX: null, // Will be set to screen center
   defaultY: null  // Will be set to screen bottom
 };
@@ -60,8 +60,8 @@ function createWindow() {
   // Load the renderer
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
-  // Open DevTools to see errors
-  mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // Open DevTools only in development (uncomment to debug)
+  // mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   // Prevent window from being closed, hide instead
   mainWindow.on('close', (event) => {
