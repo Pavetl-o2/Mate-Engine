@@ -60,8 +60,8 @@ function createWindow() {
   // Load the renderer
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
-  // Open DevTools only in development (uncomment to debug)
-  // mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // Open DevTools only in development
+  mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   // Prevent window from being closed, hide instead
   mainWindow.on('close', (event) => {
