@@ -17,8 +17,8 @@ let trayManager = null;
 
 // Avatar settings
 const AVATAR_CONFIG = {
-  width: 180,
-  height: 380,
+  width: 200,
+  height: 450,  // Increased for chat UI
   defaultX: null, // Will be set to bottom-right corner
   defaultY: null  // Will be set above taskbar
 };
@@ -43,7 +43,7 @@ function createWindow() {
     frame: false,
     alwaysOnTop: true,
     skipTaskbar: true,
-    focusable: false,  // Prevents stealing focus from other windows
+    focusable: true,  // Required for chat input
     resizable: false,
     hasShadow: false,
     webPreferences: {
@@ -55,8 +55,8 @@ function createWindow() {
   // Make window click-through except on the avatar itself
   mainWindow.setIgnoreMouseEvents(false);
 
-  // Set highest always-on-top level to stay above all windows
-  mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  // Set always-on-top level (floating allows focus for chat)
+  mainWindow.setAlwaysOnTop(true, 'floating');
 
   // Remove menu bar
   mainWindow.setMenu(null);

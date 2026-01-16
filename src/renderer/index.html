@@ -29,6 +29,27 @@
     <canvas id="avatar-canvas"></canvas>
   </div>
 
+  <!-- Chat Toggle Button -->
+  <button id="chat-toggle" title="Chat">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+  </button>
+
+  <!-- Chat Box -->
+  <div id="chat-container">
+    <div id="chat-box">
+      <div id="chat-messages"></div>
+      <div id="chat-input-container">
+        <input type="text" id="chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
+        <button id="chat-send">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio element for TTS playback -->
+  <audio id="tts-audio" style="display:none;"></audio>
+
   <script>
     // Guardar referencias de Node.js antes de cargar módulos ES
     window.nodeRequire = require;
@@ -140,8 +161,10 @@
 
             if (gltf.animations.length > 0) {
               mixer = new THREE.AnimationMixer(model);
-              mixer.clipAction(gltf.animations[0]).play();
-              console.log('Animación:', gltf.animations[0].name);
+              // Setup animation mapping
+              setupAnimations(gltf);
+              // Play idle by default
+              playAnimation('idle');
             }
 
             console.log('¡Modelo cargado!');
@@ -221,6 +244,195 @@
         </div>
       `;
     }
+
+    // ============================================
+    // CHAT MODULE
+    // ============================================
+
+    // Configuration - CHANGE THIS TO YOUR WEBHOOK URL
+    const WEBHOOK_URL = 'https://n8n.srv775163.hstgr.cloud/webhook/desktop-avatar';
+
+    // Store animations for different states
+    let animations = {};
+    let currentAnimation = null;
+
+    // Chat state
+    let isChatOpen = false;
+    let isProcessing = false;
+
+    // DOM Elements
+    const chatToggle = document.getElementById('chat-toggle');
+    const chatBox = document.getElementById('chat-box');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.getElementById('chat-send');
+    const ttsAudio = document.getElementById('tts-audio');
+
+    // Initialize chat
+    function initChat() {
+      chatToggle.addEventListener('click', toggleChat);
+      chatSend.addEventListener('click', sendMessage);
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Audio events
+      ttsAudio.addEventListener('play', () => {
+        console.log('Audio playing - trigger speaking animation');
+        playAnimation('speaking');
+      });
+
+      ttsAudio.addEventListener('ended', () => {
+        console.log('Audio ended - return to idle');
+        playAnimation('idle');
+      });
+
+      ttsAudio.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        addMessage('Error reproduciendo audio', 'system');
+      });
+
+      console.log('Chat initialized');
+    }
+
+    function toggleChat() {
+      isChatOpen = !isChatOpen;
+      chatBox.classList.toggle('visible', isChatOpen);
+      if (isChatOpen) {
+        chatInput.focus();
+      }
+    }
+
+    function addMessage(text, type = 'user') {
+      const msg = document.createElement('div');
+      msg.className = `chat-message ${type}`;
+      msg.textContent = text;
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showLoading() {
+      const loading = document.createElement('div');
+      loading.className = 'chat-loading';
+      loading.id = 'chat-loading';
+      loading.innerHTML = '<span></span><span></span><span></span>';
+      chatMessages.appendChild(loading);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideLoading() {
+      const loading = document.getElementById('chat-loading');
+      if (loading) loading.remove();
+    }
+
+    async function sendMessage() {
+      const text = chatInput.value.trim();
+      if (!text || isProcessing) return;
+
+      // Add user message
+      addMessage(text, 'user');
+      chatInput.value = '';
+
+      // Set processing state
+      isProcessing = true;
+      chatSend.disabled = true;
+      showLoading();
+
+      // Trigger thinking animation
+      playAnimation('thinking');
+
+      try {
+        // Send to webhook
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: text })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        // Get audio response
+        const audioBlob = await response.blob();
+        console.log('Received audio:', audioBlob.type, audioBlob.size, 'bytes');
+
+        // Play audio
+        const audioUrl = URL.createObjectURL(audioBlob);
+        ttsAudio.src = audioUrl;
+        await ttsAudio.play();
+
+        // Note: We don't add assistant text message since response is audio
+        // If you want text too, your webhook should return JSON with both
+
+      } catch (error) {
+        console.error('Chat error:', error);
+        addMessage(`Error: ${error.message}`, 'system');
+        playAnimation('idle');
+      } finally {
+        hideLoading();
+        isProcessing = false;
+        chatSend.disabled = false;
+      }
+    }
+
+    // Animation management
+    function setupAnimations(gltf) {
+      if (!gltf.animations || gltf.animations.length === 0) return;
+
+      console.log('Available animations:');
+      gltf.animations.forEach((clip, i) => {
+        console.log(`  ${i}: ${clip.name}`);
+        // Map animation names (adjust based on your GLB)
+        const nameLower = clip.name.toLowerCase();
+        if (nameLower.includes('idle') && !nameLower.includes('long')) {
+          animations.idle = clip;
+        } else if (nameLower.includes('long') || nameLower.includes('longidle')) {
+          animations.longIdle = clip;
+        } else if (nameLower.includes('think')) {
+          animations.thinking = clip;
+        } else if (nameLower.includes('speak') || nameLower.includes('talk')) {
+          animations.speaking = clip;
+        }
+      });
+
+      // Default to first animation if no idle found
+      if (!animations.idle && gltf.animations.length > 0) {
+        animations.idle = gltf.animations[0];
+      }
+
+      console.log('Mapped animations:', Object.keys(animations));
+    }
+
+    function playAnimation(name) {
+      if (!mixer || !animations[name]) {
+        console.log(`Animation '${name}' not available`);
+        return;
+      }
+
+      if (currentAnimation === name) return;
+
+      console.log(`Playing animation: ${name}`);
+
+      // Fade out current, fade in new
+      const clip = animations[name];
+      const action = mixer.clipAction(clip);
+
+      mixer.stopAllAction();
+      action.reset();
+      action.fadeIn(0.3);
+      action.play();
+
+      currentAnimation = name;
+    }
+
+    // Initialize chat when DOM is ready
+    initChat();
   </script>
 </body>
 </html>
