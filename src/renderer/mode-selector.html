@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desktop Avatar - Select Mode</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .container {
+      text-align: center;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+
+    .modes {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .mode-card {
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+      width: 200px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .mode-card:hover {
+      border-color: #667eea;
+      transform: translateY(-5px);
+      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+    }
+
+    .mode-card.selected {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .mode-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .mode-card.disabled:hover {
+      transform: none;
+      border-color: rgba(255,255,255,0.1);
+      box-shadow: none;
+    }
+
+    .mode-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .mode-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .mode-desc {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.5;
+    }
+
+    .mode-badge {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .mode-badge.coming-soon {
+      background: #ff9800;
+    }
+
+    .start-btn {
+      margin-top: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      padding: 15px 50px;
+      font-size: 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .start-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .start-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .remember-choice {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .remember-choice input {
+      accent-color: #667eea;
+    }
+
+    .asset-status {
+      margin-top: 10px;
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+
+    .asset-status.ready {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+    }
+
+    .asset-status.missing {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Desktop Avatar</h1>
+    <p class="subtitle">Selecciona el tipo de avatar que deseas usar</p>
+
+    <div class="modes">
+      <!-- GLB Mode -->
+      <div class="mode-card" data-mode="glb" id="mode-glb">
+        <div class="mode-icon">🎮</div>
+        <div class="mode-title">3D Model (GLB)</div>
+        <div class="mode-desc">
+          Modelo 3D con animaciones integradas.
+          Ideal para personajes de videojuegos.
+        </div>
+        <div class="asset-status" id="glb-status">Verificando...</div>
+      </div>
+
+      <!-- PNGTuber Mode -->
+      <div class="mode-card" data-mode="pngtuber" id="mode-pngtuber">
+        <div class="mode-icon">🎬</div>
+        <div class="mode-title">PNGTuber</div>
+        <div class="mode-desc">
+          Video con lip-sync en tiempo real.
+          Popular en streaming.
+        </div>
+        <div class="asset-status" id="pngtuber-status">Verificando...</div>
+      </div>
+    </div>
+
+    <button class="start-btn" id="start-btn" disabled>Iniciar</button>
+
+    <label class="remember-choice">
+      <input type="checkbox" id="remember-choice" checked>
+      Recordar mi elección
+    </label>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+    const path = require('path');
+
+    let selectedMode = null;
+    const modeCards = document.querySelectorAll('.mode-card');
+    const startBtn = document.getElementById('start-btn');
+    const rememberCheckbox = document.getElementById('remember-choice');
+
+    // Check asset availability
+    function checkAssets() {
+      const basePath = path.join(__dirname, '../../assets');
+
+      // Check GLB
+      const glbPath = path.join(basePath, 'models/avatar.glb');
+      const glbExists = fs.existsSync(glbPath);
+      const glbStatus = document.getElementById('glb-status');
+      if (glbExists) {
+        glbStatus.textContent = '✓ avatar.glb encontrado';
+        glbStatus.className = 'asset-status ready';
+      } else {
+        glbStatus.textContent = '✗ Falta avatar.glb';
+        glbStatus.className = 'asset-status missing';
+      }
+
+      // Check PNGTuber
+      const videoPath = path.join(basePath, 'pngtuber/video.mp4');
+      const videoExists = fs.existsSync(videoPath);
+      const pngtuberStatus = document.getElementById('pngtuber-status');
+      if (videoExists) {
+        pngtuberStatus.textContent = '✓ Assets encontrados';
+        pngtuberStatus.className = 'asset-status ready';
+      } else {
+        pngtuberStatus.textContent = '✗ Falta video.mp4';
+        pngtuberStatus.className = 'asset-status missing';
+      }
+
+      return { glbExists, videoExists };
+    }
+
+    // Handle mode selection
+    modeCards.forEach(card => {
+      card.addEventListener('click', () => {
+        if (card.classList.contains('disabled')) return;
+
+        modeCards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedMode = card.dataset.mode;
+        startBtn.disabled = false;
+      });
+    });
+
+    // Handle start button
+    startBtn.addEventListener('click', () => {
+      if (!selectedMode) return;
+
+      const remember = rememberCheckbox.checked;
+
+      // Send selection to main process
+      ipcRenderer.send('mode-selected', {
+        mode: selectedMode,
+        remember: remember
+      });
+    });
+
+    // Check for saved preference
+    ipcRenderer.invoke('get-saved-mode').then(savedMode => {
+      if (savedMode && savedMode !== 'selector') {
+        // Auto-select saved mode
+        const card = document.querySelector(`[data-mode="${savedMode}"]`);
+        if (card && !card.classList.contains('disabled')) {
+          card.click();
+        }
+      }
+    });
+
+    // Initialize
+    checkAssets();
+  </script>
+</body>
+</html>

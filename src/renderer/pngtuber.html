@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desktop Avatar - PNGTuber</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* PNGTuber specific styles */
+    #pngtuber-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: transparent;
+      cursor: grab;
+      -webkit-app-region: drag;
+    }
+
+    #avatar-video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #mouth-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    #debug-info {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: rgba(0,0,0,0.7);
+      color: #0f0;
+      padding: 5px;
+      font-family: monospace;
+      font-size: 10px;
+      border-radius: 3px;
+      display: none;
+    }
+
+    #debug-info.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="pngtuber-container">
+    <video id="avatar-video" loop muted playsinline></video>
+    <canvas id="mouth-canvas"></canvas>
+    <div id="debug-info"></div>
+  </div>
+
+  <!-- Chat Toggle Button -->
+  <button id="chat-toggle" title="Chat">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+  </button>
+
+  <!-- Chat Box -->
+  <div id="chat-container">
+    <div id="chat-box">
+      <div id="chat-messages"></div>
+      <div id="chat-input-container">
+        <input type="text" id="chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
+        <button id="chat-send">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio element for TTS playback -->
+  <audio id="tts-audio" style="display:none;" crossorigin="anonymous"></audio>
+
+  <script>
+    const fs = require('fs');
+    const path = require('path');
+    const { ipcRenderer } = require('electron');
+
+    // ============================================
+    // PNGTUBER ENGINE
+    // ============================================
+
+    class PNGTuberEngine {
+      constructor() {
+        this.video = document.getElementById('avatar-video');
+        this.canvas = document.getElementById('mouth-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.debugInfo = document.getElementById('debug-info');
+
+        // Mouth sprites
+        this.mouthSprites = {};
+        this.currentMouth = 'closed';
+
+        // Audio analysis
+        this.audioContext = null;
+        this.analyser = null;
+        this.dataArray = null;
+
+        // Lip-sync state
+        this.isAnalyzing = false;
+        this.mouthPosition = { x: 0.5, y: 0.7 }; // Relative position
+        this.mouthScale = 0.15; // Relative to video width
+
+        // Paths
+        this.basePath = path.join(__dirname, '../../assets/pngtuber');
+      }
+
+      async init() {
+        console.log('PNGTuber Engine initializing...');
+
+        // Check if assets exist
+        const videoPath = path.join(this.basePath, 'video.mp4');
+        if (!fs.existsSync(videoPath)) {
+          this.showPlaceholder('Falta video.mp4 en assets/pngtuber/');
+          return false;
+        }
+
+        // Load video
+        this.video.src = 'file://' + videoPath.replace(/\\/g, '/');
+        await this.video.play().catch(e => console.log('Video autoplay blocked:', e));
+
+        // Load mouth sprites
+        await this.loadMouthSprites();
+
+        // Setup canvas
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+
+        // Start render loop
+        this.render();
+
+        console.log('PNGTuber Engine ready!');
+        return true;
+      }
+
+      async loadMouthSprites() {
+        const mouthTypes = ['closed', 'half', 'open', 'e', 'u'];
+        const mouthsPath = path.join(this.basePath, 'mouths');
+
+        for (const type of mouthTypes) {
+          const spritePath = path.join(mouthsPath, `${type}.png`);
+          if (fs.existsSync(spritePath)) {
+            const img = new Image();
+            img.src = 'file://' + spritePath.replace(/\\/g, '/');
+            await new Promise(resolve => img.onload = resolve);
+            this.mouthSprites[type] = img;
+            console.log(`Loaded mouth sprite: ${type}`);
+          }
+        }
+
+        // If no sprites found, create simple colored circles as fallback
+        if (Object.keys(this.mouthSprites).length === 0) {
+          console.log('No mouth sprites found, using fallback');
+          this.createFallbackSprites();
+        }
+      }
+
+      createFallbackSprites() {
+        const sizes = {
+          closed: 5,
+          half: 10,
+          open: 20,
+          e: 15,
+          u: 12
+        };
+
+        for (const [type, size] of Object.entries(sizes)) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 50;
+          canvas.height = 50;
+          const ctx = canvas.getContext('2d');
+
+          ctx.fillStyle = '#ff6b6b';
+          ctx.beginPath();
+          ctx.ellipse(25, 25, 20, size, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          const img = new Image();
+          img.src = canvas.toDataURL();
+          this.mouthSprites[type] = img;
+        }
+      }
+
+      resizeCanvas() {
+        this.canvas.width = this.canvas.offsetWidth;
+        this.canvas.height = this.canvas.offsetHeight;
+      }
+
+      connectAudio(audioElement) {
+        if (!this.audioContext) {
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Create audio source from element
+        const source = this.audioContext.createMediaElementSource(audioElement);
+
+        // Create analyser
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 256;
+        this.analyser.smoothingTimeConstant = 0.8;
+
+        // Connect: source -> analyser -> destination
+        source.connect(this.analyser);
+        this.analyser.connect(this.audioContext.destination);
+
+        // Create data array for frequency data
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+        this.isAnalyzing = true;
+        console.log('Audio connected for lip-sync');
+      }
+
+      analyzeMouth() {
+        if (!this.isAnalyzing || !this.analyser) {
+          return 'closed';
+        }
+
+        this.analyser.getByteFrequencyData(this.dataArray);
+
+        // Calculate RMS (volume)
+        let sum = 0;
+        for (let i = 0; i < this.dataArray.length; i++) {
+          sum += this.dataArray[i] * this.dataArray[i];
+        }
+        const rms = Math.sqrt(sum / this.dataArray.length);
+
+        // Calculate frequency ratio (low vs high)
+        const midPoint = Math.floor(this.dataArray.length / 2);
+        let lowSum = 0, highSum = 0;
+        for (let i = 0; i < midPoint; i++) {
+          lowSum += this.dataArray[i];
+        }
+        for (let i = midPoint; i < this.dataArray.length; i++) {
+          highSum += this.dataArray[i];
+        }
+        const freqRatio = lowSum / (highSum + 1);
+
+        // Update debug info
+        this.updateDebug(`RMS: ${rms.toFixed(1)} | Ratio: ${freqRatio.toFixed(2)}`);
+
+        // Determine mouth state based on audio analysis
+        if (rms < 10) {
+          return 'closed';
+        } else if (rms < 30) {
+          return 'half';
+        } else if (freqRatio > 2) {
+          return 'u'; // Low frequencies = 'u' shape
+        } else if (freqRatio < 0.8) {
+          return 'e'; // High frequencies = 'e' shape
+        } else {
+          return 'open';
+        }
+      }
+
+      render() {
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Analyze audio and get mouth state
+        const mouthState = this.analyzeMouth();
+
+        // Draw mouth sprite if available
+        const sprite = this.mouthSprites[mouthState];
+        if (sprite) {
+          const videoRect = this.video.getBoundingClientRect();
+          const canvasRect = this.canvas.getBoundingClientRect();
+
+          // Calculate mouth position relative to video
+          const mouthX = this.canvas.width * this.mouthPosition.x;
+          const mouthY = this.canvas.height * this.mouthPosition.y;
+          const mouthWidth = this.canvas.width * this.mouthScale;
+          const mouthHeight = mouthWidth * (sprite.height / sprite.width);
+
+          this.ctx.drawImage(
+            sprite,
+            mouthX - mouthWidth / 2,
+            mouthY - mouthHeight / 2,
+            mouthWidth,
+            mouthHeight
+          );
+        }
+
+        this.currentMouth = mouthState;
+
+        // Continue render loop
+        requestAnimationFrame(() => this.render());
+      }
+
+      updateDebug(text) {
+        if (this.debugInfo) {
+          this.debugInfo.textContent = text;
+        }
+      }
+
+      showPlaceholder(message) {
+        const container = document.getElementById('pngtuber-container');
+        container.innerHTML = `
+          <div style="color:#fff; background:linear-gradient(135deg,#667eea,#764ba2);
+            padding:20px; font-family:Arial; font-size:12px; border-radius:8px; text-align:center;
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:80%;">
+            <strong>PNGTuber Mode</strong><br><br>
+            ${message}<br><br>
+            <small>Coloca los archivos en:<br>assets/pngtuber/</small>
+          </div>
+        `;
+      }
+
+      // Set mouth position (can be loaded from tracking.json)
+      setMouthPosition(x, y, scale) {
+        this.mouthPosition = { x, y };
+        if (scale) this.mouthScale = scale;
+      }
+
+      stopAnalysis() {
+        this.isAnalyzing = false;
+      }
+
+      startAnalysis() {
+        this.isAnalyzing = true;
+      }
+    }
+
+    // ============================================
+    // CHAT MODULE (same as GLB version)
+    // ============================================
+
+    const WEBHOOK_URL = 'https://n8n.srv775163.hstgr.cloud/webhook/desktop-avatar';
+
+    let isChatOpen = false;
+    let isProcessing = false;
+    let pngtuber = null;
+
+    const chatToggle = document.getElementById('chat-toggle');
+    const chatBox = document.getElementById('chat-box');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.getElementById('chat-send');
+    const ttsAudio = document.getElementById('tts-audio');
+
+    function initChat() {
+      chatToggle.addEventListener('click', toggleChat);
+      chatSend.addEventListener('click', sendMessage);
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Audio events for lip-sync
+      ttsAudio.addEventListener('play', () => {
+        console.log('Audio playing - start lip-sync');
+        if (pngtuber && !pngtuber.analyser) {
+          pngtuber.connectAudio(ttsAudio);
+        }
+        pngtuber?.startAnalysis();
+      });
+
+      ttsAudio.addEventListener('ended', () => {
+        console.log('Audio ended - stop lip-sync');
+        pngtuber?.stopAnalysis();
+      });
+
+      ttsAudio.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        addMessage('Error reproduciendo audio', 'system');
+      });
+
+      console.log('Chat initialized');
+    }
+
+    function toggleChat() {
+      isChatOpen = !isChatOpen;
+      chatBox.classList.toggle('visible', isChatOpen);
+      if (isChatOpen) {
+        chatInput.focus();
+      }
+    }
+
+    function addMessage(text, type = 'user') {
+      const msg = document.createElement('div');
+      msg.className = `chat-message ${type}`;
+      msg.textContent = text;
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showLoading() {
+      const loading = document.createElement('div');
+      loading.className = 'chat-loading';
+      loading.id = 'chat-loading';
+      loading.innerHTML = '<span></span><span></span><span></span>';
+      chatMessages.appendChild(loading);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideLoading() {
+      const loading = document.getElementById('chat-loading');
+      if (loading) loading.remove();
+    }
+
+    async function sendMessage() {
+      const text = chatInput.value.trim();
+      if (!text || isProcessing) return;
+
+      addMessage(text, 'user');
+      chatInput.value = '';
+
+      isProcessing = true;
+      chatSend.disabled = true;
+      showLoading();
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const audioBlob = await response.blob();
+        console.log('Received audio:', audioBlob.type, audioBlob.size, 'bytes');
+
+        const audioUrl = URL.createObjectURL(audioBlob);
+        ttsAudio.src = audioUrl;
+        await ttsAudio.play();
+
+      } catch (error) {
+        console.error('Chat error:', error);
+        addMessage(`Error: ${error.message}`, 'system');
+      } finally {
+        hideLoading();
+        isProcessing = false;
+        chatSend.disabled = false;
+      }
+    }
+
+    // ============================================
+    // DRAG CONTROLS
+    // ============================================
+
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+
+    function setupDragControls() {
+      const container = document.getElementById('pngtuber-container');
+
+      container.onmousedown = async (e) => {
+        if (e.button !== 0) return;
+        isDragging = true;
+        const pos = await ipcRenderer.invoke('get-avatar-position');
+        dragOffset.x = e.screenX - pos.x;
+        dragOffset.y = e.screenY - pos.y;
+      };
+
+      document.onmousemove = async (e) => {
+        if (!isDragging) return;
+        await ipcRenderer.invoke('set-avatar-position', {
+          x: e.screenX - dragOffset.x,
+          y: e.screenY - dragOffset.y
+        });
+      };
+
+      document.onmouseup = () => isDragging = false;
+    }
+
+    // ============================================
+    // INITIALIZE
+    // ============================================
+
+    async function init() {
+      console.log('=== Desktop Avatar (PNGTuber Mode) ===');
+
+      // Initialize PNGTuber engine
+      pngtuber = new PNGTuberEngine();
+      await pngtuber.init();
+
+      // Load tracking data if available
+      const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
+      if (fs.existsSync(trackingPath)) {
+        try {
+          const tracking = JSON.parse(fs.readFileSync(trackingPath, 'utf8'));
+          if (tracking.mouth) {
+            pngtuber.setMouthPosition(
+              tracking.mouth.x,
+              tracking.mouth.y,
+              tracking.mouth.scale
+            );
+          }
+          console.log('Loaded tracking data');
+        } catch (e) {
+          console.log('No tracking data loaded');
+        }
+      }
+
+      // Initialize chat and drag
+      initChat();
+      setupDragControls();
+
+      console.log('PNGTuber Avatar ready!');
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>

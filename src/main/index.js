@@ -7,26 +7,83 @@
 
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const WindowManager = require('./window-manager');
 const TrayManager = require('./tray');
 
 // Keep global references to prevent garbage collection
+let selectorWindow = null;
 let mainWindow = null;
 let windowManager = null;
 let trayManager = null;
+let currentMode = null;
+
+// Config file path
+const configPath = path.join(app.getPath('userData'), 'avatar-config.json');
 
 // Avatar settings
 const AVATAR_CONFIG = {
   width: 200,
-  height: 450,  // Increased for chat UI
-  defaultX: null, // Will be set to bottom-right corner
-  defaultY: null  // Will be set above taskbar
+  height: 450,
+  defaultX: null,
+  defaultY: null
 };
+
+/**
+ * Load saved configuration
+ */
+function loadConfig() {
+  try {
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error loading config:', error);
+  }
+  return { mode: 'selector', remember: false };
+}
+
+/**
+ * Save configuration
+ */
+function saveConfig(config) {
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  } catch (error) {
+    console.error('Error saving config:', error);
+  }
+}
+
+/**
+ * Creates the mode selector window
+ */
+function createSelectorWindow() {
+  selectorWindow = new BrowserWindow({
+    width: 500,
+    height: 450,
+    resizable: false,
+    frame: false,
+    transparent: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+
+  selectorWindow.loadFile(path.join(__dirname, '../renderer/mode-selector.html'));
+
+  selectorWindow.on('closed', () => {
+    selectorWindow = null;
+  });
+
+  return selectorWindow;
+}
 
 /**
  * Creates the main transparent window for the avatar
  */
-function createWindow() {
+function createAvatarWindow(mode) {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
 
@@ -43,7 +100,7 @@ function createWindow() {
     frame: false,
     alwaysOnTop: true,
     skipTaskbar: true,
-    focusable: true,  // Required for chat input
+    focusable: true,
     resizable: false,
     hasShadow: false,
     webPreferences: {
@@ -52,22 +109,20 @@ function createWindow() {
     }
   });
 
-  // Make window click-through except on the avatar itself
   mainWindow.setIgnoreMouseEvents(false);
-
-  // Set always-on-top level (floating allows focus for chat)
   mainWindow.setAlwaysOnTop(true, 'floating');
-
-  // Remove menu bar
   mainWindow.setMenu(null);
 
-  // Load the renderer
-  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+  // Load the appropriate renderer based on mode
+  const rendererFile = mode === 'pngtuber'
+    ? '../renderer/pngtuber.html'
+    : '../renderer/index.html';
+
+  mainWindow.loadFile(path.join(__dirname, rendererFile));
 
   // Open DevTools only in development
-  mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // mainWindow.webContents.openDevTools({ mode: 'detach' });
 
-  // Prevent window from being closed, hide instead
   mainWindow.on('close', (event) => {
     if (!app.isQuitting) {
       event.preventDefault();
@@ -79,6 +134,15 @@ function createWindow() {
     mainWindow = null;
   });
 
+  // Initialize managers
+  windowManager = new WindowManager();
+  trayManager = new TrayManager(mainWindow, app);
+  windowManager.startDetection();
+
+  currentMode = mode;
+  console.log(`Desktop Avatar initialized in ${mode} mode!`);
+  console.log(`Platform: ${process.platform}`);
+
   return mainWindow;
 }
 
@@ -86,20 +150,14 @@ function createWindow() {
  * Initialize the application
  */
 async function initialize() {
-  // Create the main window
-  createWindow();
+  const config = loadConfig();
 
-  // Initialize window manager for detecting system windows
-  windowManager = new WindowManager();
-
-  // Initialize system tray
-  trayManager = new TrayManager(mainWindow, app);
-
-  // Start window detection loop
-  windowManager.startDetection();
-
-  console.log('Desktop Avatar initialized successfully!');
-  console.log(`Platform: ${process.platform}`);
+  // If user chose to remember and has a valid mode, skip selector
+  if (config.remember && config.mode && config.mode !== 'selector') {
+    createAvatarWindow(config.mode);
+  } else {
+    createSelectorWindow();
+  }
 }
 
 // App event handlers
@@ -113,7 +171,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    initialize();
   } else if (mainWindow) {
     mainWindow.show();
   }
@@ -127,56 +185,83 @@ app.on('before-quit', () => {
 });
 
 // ============================================
-// IPC Handlers - Communication with Renderer
+// IPC Handlers - Mode Selection
 // ============================================
 
 /**
- * Get list of detected windows
+ * Get saved mode preference
  */
+ipcMain.handle('get-saved-mode', async () => {
+  const config = loadConfig();
+  return config.mode;
+});
+
+/**
+ * Handle mode selection from selector window
+ */
+ipcMain.on('mode-selected', (event, { mode, remember }) => {
+  console.log(`Mode selected: ${mode}, remember: ${remember}`);
+
+  // Save preference
+  saveConfig({ mode: remember ? mode : 'selector', remember });
+
+  // Close selector window
+  if (selectorWindow) {
+    selectorWindow.close();
+  }
+
+  // Create avatar window with selected mode
+  createAvatarWindow(mode);
+});
+
+/**
+ * Get current avatar mode
+ */
+ipcMain.handle('get-current-mode', async () => {
+  return currentMode;
+});
+
+/**
+ * Reset mode preference (show selector on next start)
+ */
+ipcMain.handle('reset-mode-preference', async () => {
+  saveConfig({ mode: 'selector', remember: false });
+  return true;
+});
+
+// ============================================
+// IPC Handlers - Avatar Window
+// ============================================
+
 ipcMain.handle('get-windows', async () => {
   if (!windowManager) return [];
   return windowManager.getWindows();
 });
 
-/**
- * Get current avatar window position
- */
 ipcMain.handle('get-avatar-position', async () => {
   if (!mainWindow) return { x: 0, y: 0 };
   const [x, y] = mainWindow.getPosition();
   return { x, y };
 });
 
-/**
- * Set avatar window position
- */
 ipcMain.handle('set-avatar-position', async (event, { x, y }) => {
   if (!mainWindow) return false;
   mainWindow.setPosition(Math.round(x), Math.round(y));
   return true;
 });
 
-/**
- * Get avatar window size
- */
 ipcMain.handle('get-avatar-size', async () => {
   if (!mainWindow) return { width: 0, height: 0 };
   const [width, height] = mainWindow.getSize();
   return { width, height };
 });
 
-/**
- * Set avatar window size
- */
 ipcMain.handle('set-avatar-size', async (event, { width, height }) => {
   if (!mainWindow) return false;
   mainWindow.setSize(Math.round(width), Math.round(height));
   return true;
 });
 
-/**
- * Get screen information
- */
 ipcMain.handle('get-screen-info', async () => {
   const primaryDisplay = screen.getPrimaryDisplay();
   return {
@@ -186,35 +271,23 @@ ipcMain.handle('get-screen-info', async () => {
   };
 });
 
-/**
- * Set always on top
- */
 ipcMain.handle('set-always-on-top', async (event, value) => {
   if (!mainWindow) return false;
   mainWindow.setAlwaysOnTop(value);
   return true;
 });
 
-/**
- * Set click-through mode (for areas outside avatar)
- */
 ipcMain.handle('set-ignore-mouse', async (event, ignore, options = {}) => {
   if (!mainWindow) return false;
   mainWindow.setIgnoreMouseEvents(ignore, options);
   return true;
 });
 
-/**
- * Get taskbar information
- */
 ipcMain.handle('get-taskbar-info', async () => {
   if (!windowManager) return null;
   return windowManager.getTaskbarInfo();
 });
 
-/**
- * Trigger window detection refresh
- */
 ipcMain.handle('refresh-windows', async () => {
   if (!windowManager) return [];
   await windowManager.detectWindows();

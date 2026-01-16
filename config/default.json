@@ -1,9 +1,18 @@
 {
   "avatar": {
     "width": 200,
-    "height": 300,
+    "height": 450,
     "scale": 1.0,
-    "mode": "auto"
+    "mode": "glb",
+    "type": "glb",
+    "glb": {
+      "modelPath": "assets/models/avatar.glb"
+    },
+    "pngtuber": {
+      "videoPath": "assets/pngtuber/video.mp4",
+      "mouthsPath": "assets/pngtuber/mouths",
+      "trackingPath": "assets/pngtuber/tracking.json"
+    }
   },
   "behavior": {
     "alwaysOnTop": true,
