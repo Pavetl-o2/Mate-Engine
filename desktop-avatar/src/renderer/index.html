@@ -177,9 +177,9 @@
       obj.position.y = -box.min.y;
       obj.position.z = -center.z;
 
-      // Cámara centrada en el modelo
+      // Cámara alejada para ver modelo completo
       const h = size.y * scale;
-      camera.position.set(0, h * 0.5, 2.8);
+      camera.position.set(0, h * 0.6, 5.5);
       camera.lookAt(0, h * 0.5, 0);
 
       console.log('Escala:', scale);

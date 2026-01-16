@@ -17,8 +17,8 @@ let trayManager = null;
 
 // Avatar settings
 const AVATAR_CONFIG = {
-  width: 200,
-  height: 500,
+  width: 350,
+  height: 750,
   defaultX: null, // Will be set to screen center
   defaultY: null  // Will be set to screen bottom
 };
