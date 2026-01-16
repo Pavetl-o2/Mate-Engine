@@ -163,28 +163,26 @@
 
       console.log('Tamaño original:', size);
 
-      // Escalar para que quepa bien en la ventana
+      // Escala original
       const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 2.2 / maxDim;
+      const scale = 1.6 / maxDim;
       obj.scale.setScalar(scale);
 
-      // Recalcular bounds después de escalar
+      // Recalcular bounds
       box.setFromObject(obj);
       box.getCenter(center);
-      const newSize = box.getSize(new THREE.Vector3());
 
-      // Centrar el modelo
+      // Centrar horizontalmente, poner en el suelo
       obj.position.x = -center.x;
       obj.position.y = -box.min.y;
       obj.position.z = -center.z;
 
-      // Posicionar cámara para ver el modelo completo y centrado
-      const modelHeight = newSize.y;
-      camera.position.set(0, modelHeight * 0.45, 3.5);
-      camera.lookAt(0, modelHeight * 0.45, 0);
+      // Cámara centrada en el modelo
+      const h = size.y * scale;
+      camera.position.set(0, h * 0.5, 2.8);
+      camera.lookAt(0, h * 0.5, 0);
 
-      console.log('Escala aplicada:', scale);
-      console.log('Altura del modelo:', modelHeight);
+      console.log('Escala:', scale);
     }
 
     function setupControls() {
