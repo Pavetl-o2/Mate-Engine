@@ -50,6 +50,157 @@
     #debug-info.visible {
       display: block;
     }
+
+    /* Calibration mode */
+    #calibrate-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      cursor: pointer;
+      z-index: 1000;
+      -webkit-app-region: no-drag;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      transition: opacity 0.3s, transform 0.2s;
+    }
+
+    #calibrate-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    #calibrate-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    #calibration-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      -webkit-app-region: no-drag;
+    }
+
+    #calibration-overlay.visible {
+      display: flex;
+    }
+
+    #calibration-instructions {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 0 0 10px 10px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      text-align: center;
+      max-width: 90%;
+    }
+
+    #calibration-area {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    #mouth-marker {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border: 3px dashed #00ff00;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+
+    #mouth-marker::before {
+      content: '+';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #00ff00;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #calibration-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 1001;
+    }
+
+    #calibration-controls button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    #calibration-controls button:hover {
+      transform: scale(1.05);
+    }
+
+    #save-calibration {
+      background: linear-gradient(135deg, #00c853, #00e676);
+      color: white;
+    }
+
+    #cancel-calibration {
+      background: linear-gradient(135deg, #ff5252, #ff1744);
+      color: white;
+    }
+
+    #scale-control {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px 15px;
+      border-radius: 20px;
+      z-index: 1001;
+    }
+
+    #scale-control label {
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    #scale-slider {
+      width: 120px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -57,6 +208,30 @@
     <video id="avatar-video" loop muted playsinline></video>
     <canvas id="mouth-canvas"></canvas>
     <div id="debug-info"></div>
+  </div>
+
+  <!-- Calibrate Button -->
+  <button id="calibrate-btn" title="Calibrar posición de boca">
+    <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+  </button>
+
+  <!-- Calibration Overlay -->
+  <div id="calibration-overlay">
+    <div id="calibration-instructions">
+      <strong>Modo Calibración</strong><br>
+      Haz clic en el avatar donde debe estar la boca
+    </div>
+    <div id="calibration-area"></div>
+    <div id="mouth-marker"></div>
+    <div id="scale-control">
+      <label>Tamaño:</label>
+      <input type="range" id="scale-slider" min="5" max="40" value="15">
+      <span id="scale-value">15%</span>
+    </div>
+    <div id="calibration-controls">
+      <button id="save-calibration">✓ Guardar</button>
+      <button id="cancel-calibration">✗ Cancelar</button>
+    </div>
   </div>
 
   <!-- Chat Toggle Button -->
@@ -477,6 +652,194 @@
     }
 
     // ============================================
+    // CALIBRATION MODULE
+    // ============================================
+
+    let isCalibrating = false;
+    let calibrationPos = { x: 0.5, y: 0.7 };
+    let calibrationScale = 0.15;
+
+    const calibrateBtn = document.getElementById('calibrate-btn');
+    const calibrationOverlay = document.getElementById('calibration-overlay');
+    const calibrationArea = document.getElementById('calibration-area');
+    const mouthMarker = document.getElementById('mouth-marker');
+    const scaleSlider = document.getElementById('scale-slider');
+    const scaleValue = document.getElementById('scale-value');
+    const saveCalibration = document.getElementById('save-calibration');
+    const cancelCalibration = document.getElementById('cancel-calibration');
+
+    function initCalibration() {
+      // Open calibration mode
+      calibrateBtn.addEventListener('click', () => {
+        openCalibrationMode();
+      });
+
+      // Click to position mouth
+      calibrationArea.addEventListener('click', (e) => {
+        const rect = calibrationArea.getBoundingClientRect();
+        calibrationPos.x = e.clientX / rect.width;
+        calibrationPos.y = e.clientY / rect.height;
+        updateMarkerPosition();
+      });
+
+      // Drag support for marker
+      let isDraggingMarker = false;
+      calibrationArea.addEventListener('mousedown', (e) => {
+        isDraggingMarker = true;
+      });
+
+      calibrationArea.addEventListener('mousemove', (e) => {
+        if (!isDraggingMarker) return;
+        const rect = calibrationArea.getBoundingClientRect();
+        calibrationPos.x = Math.max(0, Math.min(1, e.clientX / rect.width));
+        calibrationPos.y = Math.max(0, Math.min(1, e.clientY / rect.height));
+        updateMarkerPosition();
+        // Live preview
+        if (pngtuber) {
+          pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
+        }
+      });
+
+      calibrationArea.addEventListener('mouseup', () => {
+        isDraggingMarker = false;
+      });
+
+      // Scale slider
+      scaleSlider.addEventListener('input', (e) => {
+        calibrationScale = parseInt(e.target.value);
+        scaleValue.textContent = `${calibrationScale}%`;
+        mouthMarker.style.width = `${calibrationScale * 3}px`;
+        mouthMarker.style.height = `${calibrationScale * 3}px`;
+        // Live preview
+        if (pngtuber) {
+          pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
+        }
+      });
+
+      // Save button
+      saveCalibration.addEventListener('click', () => {
+        saveCalibrationData();
+        closeCalibrationMode();
+      });
+
+      // Cancel button
+      cancelCalibration.addEventListener('click', () => {
+        closeCalibrationMode();
+        // Restore previous position
+        loadTrackingData();
+      });
+    }
+
+    function openCalibrationMode() {
+      isCalibrating = true;
+      calibrationOverlay.classList.add('visible');
+
+      // Set initial marker position
+      if (pngtuber) {
+        calibrationPos = { ...pngtuber.mouthPosition };
+        calibrationScale = pngtuber.mouthScale * 100;
+      }
+
+      scaleSlider.value = calibrationScale;
+      scaleValue.textContent = `${Math.round(calibrationScale)}%`;
+      updateMarkerPosition();
+    }
+
+    function closeCalibrationMode() {
+      isCalibrating = false;
+      calibrationOverlay.classList.remove('visible');
+    }
+
+    function updateMarkerPosition() {
+      const rect = calibrationArea.getBoundingClientRect();
+      mouthMarker.style.left = `${calibrationPos.x * rect.width}px`;
+      mouthMarker.style.top = `${calibrationPos.y * rect.height}px`;
+      mouthMarker.style.width = `${calibrationScale * 3}px`;
+      mouthMarker.style.height = `${calibrationScale * 3}px`;
+    }
+
+    function saveCalibrationData() {
+      const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
+      const trackingData = {
+        mouth: {
+          x: calibrationPos.x,
+          y: calibrationPos.y,
+          scale: calibrationScale / 100
+        },
+        savedAt: new Date().toISOString()
+      };
+
+      try {
+        fs.writeFileSync(trackingPath, JSON.stringify(trackingData, null, 2));
+        console.log('Calibration saved:', trackingData);
+
+        // Apply to engine
+        if (pngtuber) {
+          pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
+        }
+
+        // Show success feedback
+        showCalibrationFeedback('✓ Posición guardada');
+      } catch (e) {
+        console.error('Error saving calibration:', e);
+        showCalibrationFeedback('✗ Error al guardar');
+      }
+    }
+
+    function loadTrackingData() {
+      const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
+      if (fs.existsSync(trackingPath)) {
+        try {
+          const tracking = JSON.parse(fs.readFileSync(trackingPath, 'utf8'));
+          if (tracking.mouth && pngtuber) {
+            pngtuber.setMouthPosition(
+              tracking.mouth.x,
+              tracking.mouth.y,
+              tracking.mouth.scale
+            );
+          }
+          console.log('Loaded tracking data');
+        } catch (e) {
+          console.log('Error loading tracking data:', e);
+        }
+      }
+    }
+
+    function showCalibrationFeedback(message) {
+      const feedback = document.createElement('div');
+      feedback.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        z-index: 2000;
+        animation: fadeInOut 2s ease;
+      `;
+      feedback.textContent = message;
+      document.body.appendChild(feedback);
+
+      setTimeout(() => feedback.remove(), 2000);
+    }
+
+    // Add animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeInOut {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // ============================================
     // INITIALIZE
     // ============================================
 
@@ -505,9 +868,10 @@
         }
       }
 
-      // Initialize chat and drag
+      // Initialize chat, drag, and calibration
       initChat();
       setupDragControls();
+      initCalibration();
 
       console.log('PNGTuber Avatar ready!');
     }
