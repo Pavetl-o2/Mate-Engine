@@ -1,77 +1,35 @@
-# Unity generated folders
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Mm]emoryCaptures/
+# Dependencies
+node_modules/
 
-# AI Source
-Assets/StreamingAssets/undreamai-v1.2.4-llamacpp/
-Assets/StreamingAssets/qwen2.5-1.5b-instruct-q4_k_m.gguf
-Assets/StreamingAssets/Qwen3-1.7B-Q4_K_M.gguf
-Assets/StreamingAssets/Qwen3-4B-Q2_K.gguf
-Assets/StreamingAssets/Qwen3-4B-Q4_K_M.gguf
-Assets/StreamingAssets/undreamai-v1.2.5-llamacpp
+# Build output
+dist/
+out/
 
-# Test Models
-Assets/MATE ENGINE - Test Station
-Assets/ExportedModel
+# Electron
+*.log
 
-# Unity auto-generated files
-sysinfo.txt
-
-# Crash logs
-*.stacktrace
-
-# User-specific files
-*.user
-*.userprefs
-*.csproj
-*.unityproj
-*.sln
-*.suo
-*.tmp
-*.svd
-*.pidb
-*.booproj
-
-# Rider and VS Code
-.idea/
-.vscode/
-*.code-workspace
-
-# Unity cache and packages
-*.apk
-*.unitypackage
-
-# Builds
-*.exe
-*.app
-*.apk
-*.x86
-*.x86_64
-*.aab
-
-# MacOS system files
+# OS files
 .DS_Store
-
-# Windows system files
 Thumbs.db
-desktop.ini
 
-# Git-specific
-.gitattributes
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Asset store tools
-Assets/AssetStoreTools*
+# Environment
+.env
+.env.local
+.env.*.local
 
-# Collaborate / Plastic SCM
-.collabignore
-.plastic/
+# User config (keep default.json)
+config/user.json
 
-.vs
-Assets/Example Avatar - USED FOR MATE ENGINE
-ProjectSettings/Packages
-UserSettings/Layouts
+# Cache
+.cache/
+*.cache
+
+# API Keys (never commit!)
+api-keys.json
+secrets.json
