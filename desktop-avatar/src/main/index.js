@@ -17,10 +17,10 @@ let trayManager = null;
 
 // Avatar settings
 const AVATAR_CONFIG = {
-  width: 350,
-  height: 750,
-  defaultX: null, // Will be set to screen center
-  defaultY: null  // Will be set to screen bottom
+  width: 180,
+  height: 380,
+  defaultX: null, // Will be set to bottom-right corner
+  defaultY: null  // Will be set above taskbar
 };
 
 /**
@@ -30,9 +30,9 @@ function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
 
-  // Default position: bottom center of screen
-  AVATAR_CONFIG.defaultX = Math.round(screenWidth / 2 - AVATAR_CONFIG.width / 2);
-  AVATAR_CONFIG.defaultY = screenHeight - AVATAR_CONFIG.height - 50;
+  // Default position: bottom-right corner, above taskbar
+  AVATAR_CONFIG.defaultX = screenWidth - AVATAR_CONFIG.width - 20;
+  AVATAR_CONFIG.defaultY = screenHeight - AVATAR_CONFIG.height;
 
   mainWindow = new BrowserWindow({
     width: AVATAR_CONFIG.width,
@@ -43,6 +43,7 @@ function createWindow() {
     frame: false,
     alwaysOnTop: true,
     skipTaskbar: true,
+    focusable: false,  // Prevents stealing focus from other windows
     resizable: false,
     hasShadow: false,
     webPreferences: {
@@ -53,6 +54,9 @@ function createWindow() {
 
   // Make window click-through except on the avatar itself
   mainWindow.setIgnoreMouseEvents(false);
+
+  // Set highest always-on-top level to stay above all windows
+  mainWindow.setAlwaysOnTop(true, 'screen-saver');
 
   // Remove menu bar
   mainWindow.setMenu(null);
