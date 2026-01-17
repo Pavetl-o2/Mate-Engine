@@ -11,6 +11,10 @@ public class UniversalBlendshapes : MonoBehaviour
     [Range(0f, 1f)] public float A, I, U, E, O, Joy, Angry, Sorrow, Fun;
     public float fadeSpeed = 5f, safeTimeout = 2f, minHoldTime = 0.1f;
 
+    [Header("Auto-Fade Settings")]
+    [Tooltip("If disabled, blendshapes won't auto-fade to zero (useful for external tracking)")]
+    public bool enableAutoFade = true;
+
     private VRMBlendShapeProxy proxy0; private Vrm10Instance vrm1; private Vrm10RuntimeExpression expr1;
     private class BlendState { public float value, lastInput, lastUpdateTime, holdUntil; }
 
@@ -143,6 +147,13 @@ public class UniversalBlendshapes : MonoBehaviour
         }
         else
         {
+            // Only auto-fade if enabled
+            if (!enableAutoFade)
+            {
+                state.value = input;
+                return;
+            }
+
             if (now < state.holdUntil)
             {
                 state.value = input;
