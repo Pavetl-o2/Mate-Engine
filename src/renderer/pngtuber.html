@@ -258,7 +258,388 @@
   <script>
     const fs = require('fs');
     const path = require('path');
+    const zlib = require('zlib');
     const { ipcRenderer } = require('electron');
+
+    // ============================================
+    // NPZ/NPY PARSER (for MotionPNGTuber compatibility)
+    // ============================================
+
+    class NPZParser {
+      /**
+       * Parse NPY format buffer (NumPy binary format)
+       * Format: magic string + version + header_len + header (dict) + data
+       */
+      static parseNPY(buffer) {
+        const view = new DataView(buffer.buffer || buffer);
+
+        // Check magic number: \x93NUMPY
+        const magic = String.fromCharCode(buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
+        if (magic !== '\x93NUMPY') {
+          throw new Error('Invalid NPY file: wrong magic number');
+        }
+
+        // Version
+        const majorVersion = buffer[6];
+        const minorVersion = buffer[7];
+
+        // Header length (depends on version)
+        let headerLen, headerOffset;
+        if (majorVersion === 1) {
+          headerLen = view.getUint16(8, true); // little-endian
+          headerOffset = 10;
+        } else {
+          headerLen = view.getUint32(8, true); // little-endian
+          headerOffset = 12;
+        }
+
+        // Parse header (Python dict-like string)
+        const headerStr = new TextDecoder().decode(buffer.slice(headerOffset, headerOffset + headerLen));
+        const header = this.parseNPYHeader(headerStr);
+
+        // Data starts after header
+        const dataOffset = headerOffset + headerLen;
+        const dataBuffer = buffer.slice(dataOffset);
+
+        // Parse data based on dtype
+        return this.parseNPYData(dataBuffer, header);
+      }
+
+      static parseNPYHeader(headerStr) {
+        // Parse Python dict-like header: {'descr': '<f4', 'fortran_order': False, 'shape': (100, 4, 2)}
+        const descrMatch = headerStr.match(/'descr':\s*'([^']+)'/);
+        const shapeMatch = headerStr.match(/'shape':\s*\(([^)]+)\)/);
+        const fortranMatch = headerStr.match(/'fortran_order':\s*(True|False)/);
+
+        const dtype = descrMatch ? descrMatch[1] : '<f8';
+        const shapeStr = shapeMatch ? shapeMatch[1] : '';
+        const shape = shapeStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        const fortranOrder = fortranMatch ? fortranMatch[1] === 'True' : false;
+
+        return { dtype, shape, fortranOrder };
+      }
+
+      static parseNPYData(buffer, header) {
+        const { dtype, shape } = header;
+        const totalElements = shape.reduce((a, b) => a * b, 1);
+
+        let data;
+        const view = new DataView(buffer.buffer || buffer);
+
+        // Parse based on dtype
+        if (dtype.includes('f4') || dtype.includes('float32')) {
+          // float32
+          data = new Float32Array(totalElements);
+          for (let i = 0; i < totalElements; i++) {
+            data[i] = view.getFloat32(i * 4, dtype[0] === '<');
+          }
+        } else if (dtype.includes('f8') || dtype.includes('float64')) {
+          // float64
+          data = new Float64Array(totalElements);
+          for (let i = 0; i < totalElements; i++) {
+            data[i] = view.getFloat64(i * 8, dtype[0] === '<');
+          }
+        } else if (dtype.includes('i4') || dtype.includes('int32')) {
+          // int32
+          data = new Int32Array(totalElements);
+          for (let i = 0; i < totalElements; i++) {
+            data[i] = view.getInt32(i * 4, dtype[0] === '<');
+          }
+        } else if (dtype.includes('b1') || dtype.includes('bool')) {
+          // boolean
+          data = new Uint8Array(totalElements);
+          for (let i = 0; i < totalElements; i++) {
+            data[i] = buffer[i];
+          }
+        } else if (dtype.includes('u1') || dtype.includes('uint8')) {
+          // uint8
+          data = new Uint8Array(buffer.slice(0, totalElements));
+        } else {
+          // Default to float64
+          data = new Float64Array(totalElements);
+          for (let i = 0; i < totalElements; i++) {
+            data[i] = view.getFloat64(i * 8, true);
+          }
+        }
+
+        return { data, shape, dtype };
+      }
+
+      /**
+       * Load NPZ file (ZIP archive of NPY files)
+       */
+      static loadNPZ(filePath) {
+        const fileBuffer = fs.readFileSync(filePath);
+        const entries = {};
+
+        // NPZ is a ZIP file - parse it manually
+        let offset = 0;
+        while (offset < fileBuffer.length - 4) {
+          // Look for local file header signature: PK\x03\x04
+          if (fileBuffer[offset] !== 0x50 || fileBuffer[offset + 1] !== 0x4B ||
+              fileBuffer[offset + 2] !== 0x03 || fileBuffer[offset + 3] !== 0x04) {
+            break;
+          }
+
+          const view = new DataView(fileBuffer.buffer, offset);
+
+          // Parse local file header
+          const compressionMethod = view.getUint16(8, true);
+          const compressedSize = view.getUint32(18, true);
+          const uncompressedSize = view.getUint32(22, true);
+          const fileNameLen = view.getUint16(26, true);
+          const extraFieldLen = view.getUint16(28, true);
+
+          const headerSize = 30;
+          const fileName = fileBuffer.slice(offset + headerSize, offset + headerSize + fileNameLen).toString('utf8');
+          const dataStart = offset + headerSize + fileNameLen + extraFieldLen;
+          const compressedData = fileBuffer.slice(dataStart, dataStart + compressedSize);
+
+          // Decompress if needed
+          let data;
+          if (compressionMethod === 0) {
+            // No compression
+            data = compressedData;
+          } else if (compressionMethod === 8) {
+            // Deflate
+            data = zlib.inflateRawSync(compressedData);
+          } else {
+            console.warn(`Unknown compression method ${compressionMethod} for ${fileName}`);
+            offset = dataStart + compressedSize;
+            continue;
+          }
+
+          // Parse NPY data if it's a .npy file
+          const baseName = fileName.replace('.npy', '');
+          if (fileName.endsWith('.npy')) {
+            try {
+              entries[baseName] = this.parseNPY(data);
+            } catch (e) {
+              console.warn(`Error parsing ${fileName}:`, e);
+            }
+          }
+
+          offset = dataStart + compressedSize;
+        }
+
+        return entries;
+      }
+    }
+
+    // ============================================
+    // MOUTH TRACK DATA (per-frame tracking)
+    // ============================================
+
+    class MouthTrack {
+      constructor() {
+        this.quads = null;      // Array of quad coordinates per frame (N x 4 x 2)
+        this.valid = null;      // Boolean array indicating valid frames
+        this.totalFrames = 0;
+        this.srcWidth = 0;
+        this.srcHeight = 0;
+        this.fps = 30;
+        this.hasData = false;
+
+        // Fallback static position (used when no NPZ tracking)
+        this.staticPosition = { x: 0.5, y: 0.7 };
+        this.staticScale = 0.15;
+      }
+
+      /**
+       * Load tracking data from NPZ file (MotionPNGTuber format)
+       */
+      loadFromNPZ(filePath, targetWidth, targetHeight) {
+        try {
+          const npzData = NPZParser.loadNPZ(filePath);
+
+          // Get quad data
+          if (npzData.quad) {
+            const { data, shape } = npzData.quad;
+            this.totalFrames = shape[0];
+
+            // Reshape flat array to [N][4][2] structure
+            this.quads = [];
+            for (let i = 0; i < this.totalFrames; i++) {
+              const quad = [];
+              for (let j = 0; j < 4; j++) {
+                const idx = (i * 4 + j) * 2;
+                quad.push([data[idx], data[idx + 1]]);
+              }
+              this.quads.push(quad);
+            }
+          } else if (npzData.bbox) {
+            // Alternative: bbox format (x, y, w, h) - convert to quad
+            const { data, shape } = npzData.bbox;
+            this.totalFrames = shape[0];
+            this.quads = [];
+
+            for (let i = 0; i < this.totalFrames; i++) {
+              const idx = i * 4;
+              const x = data[idx];
+              const y = data[idx + 1];
+              const w = data[idx + 2];
+              const h = data[idx + 3];
+
+              // Convert bbox to quad (4 corners)
+              this.quads.push([
+                [x, y],           // top-left
+                [x + w, y],       // top-right
+                [x + w, y + h],   // bottom-right
+                [x, y + h]        // bottom-left
+              ]);
+            }
+          }
+
+          // Get valid flags
+          if (npzData.valid) {
+            this.valid = Array.from(npzData.valid.data);
+          } else {
+            this.valid = new Array(this.totalFrames).fill(1);
+          }
+
+          // Get source dimensions
+          this.srcWidth = npzData.w?.data?.[0] || targetWidth;
+          this.srcHeight = npzData.h?.data?.[0] || targetHeight;
+
+          // Get FPS if available
+          if (npzData.fps) {
+            this.fps = npzData.fps.data[0];
+          }
+
+          // Scale quads to target dimensions
+          if (this.quads && (this.srcWidth !== targetWidth || this.srcHeight !== targetHeight)) {
+            const scaleX = targetWidth / this.srcWidth;
+            const scaleY = targetHeight / this.srcHeight;
+
+            for (let i = 0; i < this.quads.length; i++) {
+              for (let j = 0; j < 4; j++) {
+                this.quads[i][j][0] *= scaleX;
+                this.quads[i][j][1] *= scaleY;
+              }
+            }
+          }
+
+          // Fill invalid frames by holding previous valid
+          this.fillInvalidFrames();
+
+          this.hasData = this.quads && this.quads.length > 0;
+          console.log(`Loaded NPZ tracking: ${this.totalFrames} frames, hasData: ${this.hasData}`);
+          return true;
+        } catch (e) {
+          console.error('Error loading NPZ:', e);
+          return false;
+        }
+      }
+
+      /**
+       * Load tracking from JSON file (simpler format for manual configuration)
+       * JSON format: { frames: [[{x,y}, {x,y}, {x,y}, {x,y}], ...], fps: 30 }
+       * Or simpler: { mouth: {x, y, scale}, fps: 30 } for static position
+       */
+      loadFromJSON(filePath, targetWidth, targetHeight) {
+        try {
+          const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+          // Check if it has per-frame data
+          if (data.frames && Array.isArray(data.frames)) {
+            this.totalFrames = data.frames.length;
+            this.quads = data.frames.map(frame => {
+              if (Array.isArray(frame) && frame.length === 4) {
+                return frame.map(p => [p.x || p[0], p.y || p[1]]);
+              }
+              return null;
+            });
+            this.valid = this.quads.map(q => q !== null);
+            this.fps = data.fps || 30;
+            this.hasData = true;
+            this.fillInvalidFrames();
+            return true;
+          }
+
+          // Static position fallback
+          if (data.mouth) {
+            this.staticPosition = { x: data.mouth.x, y: data.mouth.y };
+            this.staticScale = data.mouth.scale || 0.15;
+          }
+
+          return false;
+        } catch (e) {
+          console.log('Error loading JSON tracking:', e);
+          return false;
+        }
+      }
+
+      /**
+       * Fill invalid frames by holding the last valid frame
+       */
+      fillInvalidFrames() {
+        if (!this.quads || !this.valid) return;
+
+        let lastValid = null;
+
+        // Forward pass - fill with previous valid
+        for (let i = 0; i < this.totalFrames; i++) {
+          if (this.valid[i]) {
+            lastValid = this.quads[i];
+          } else if (lastValid) {
+            this.quads[i] = JSON.parse(JSON.stringify(lastValid));
+          }
+        }
+
+        // Backward pass - fill frames before first valid
+        lastValid = null;
+        for (let i = this.totalFrames - 1; i >= 0; i--) {
+          if (this.valid[i]) {
+            lastValid = this.quads[i];
+          } else if (lastValid && !this.quads[i]) {
+            this.quads[i] = JSON.parse(JSON.stringify(lastValid));
+          }
+        }
+      }
+
+      /**
+       * Get quad coordinates for a specific frame index
+       */
+      getQuad(frameIndex) {
+        if (!this.hasData || !this.quads) return null;
+
+        const idx = Math.floor(frameIndex) % this.totalFrames;
+        return this.quads[idx];
+      }
+
+      /**
+       * Get center position and scale from quad (for simplified rendering)
+       */
+      getPositionFromQuad(quad, canvasWidth, canvasHeight) {
+        if (!quad) {
+          return {
+            x: this.staticPosition.x,
+            y: this.staticPosition.y,
+            scale: this.staticScale,
+            rotation: 0
+          };
+        }
+
+        // Calculate center from quad corners
+        const centerX = (quad[0][0] + quad[1][0] + quad[2][0] + quad[3][0]) / 4;
+        const centerY = (quad[0][1] + quad[1][1] + quad[2][1] + quad[3][1]) / 4;
+
+        // Calculate width from quad (distance between left and right edges)
+        const width = Math.sqrt(
+          Math.pow(quad[1][0] - quad[0][0], 2) + Math.pow(quad[1][1] - quad[0][1], 2)
+        );
+
+        // Calculate rotation angle
+        const angle = Math.atan2(quad[1][1] - quad[0][1], quad[1][0] - quad[0][0]);
+
+        return {
+          x: centerX / canvasWidth,
+          y: centerY / canvasHeight,
+          scale: width / canvasWidth,
+          rotation: angle
+        };
+      }
+    }
 
     // ============================================
     // PNGTUBER ENGINE
@@ -282,8 +663,14 @@
 
         // Lip-sync state
         this.isAnalyzing = false;
-        this.mouthPosition = { x: 0.5, y: 0.7 }; // Relative position
-        this.mouthScale = 0.15; // Relative to video width
+        this.mouthPosition = { x: 0.5, y: 0.7 }; // Relative position (fallback)
+        this.mouthScale = 0.15; // Relative to video width (fallback)
+        this.mouthRotation = 0;
+
+        // Frame tracking
+        this.mouthTrack = new MouthTrack();
+        this.videoFPS = 30;
+        this.usePerFrameTracking = false;
 
         // Paths
         this.basePath = path.join(__dirname, '../../assets/pngtuber');
@@ -303,6 +690,17 @@
         this.video.src = 'file://' + videoPath.replace(/\\/g, '/');
         await this.video.play().catch(e => console.log('Video autoplay blocked:', e));
 
+        // Get video metadata
+        await new Promise(resolve => {
+          if (this.video.readyState >= 1) resolve();
+          else this.video.addEventListener('loadedmetadata', resolve, { once: true });
+        });
+
+        this.videoFPS = 30; // Default FPS, can be overridden by tracking data
+        const videoWidth = this.video.videoWidth;
+        const videoHeight = this.video.videoHeight;
+        console.log(`Video dimensions: ${videoWidth}x${videoHeight}`);
+
         // Load mouth sprites
         await this.loadMouthSprites();
 
@@ -310,11 +708,64 @@
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
 
+        // Load per-frame tracking data (NPZ from MotionPNGTuber or JSON)
+        await this.loadTrackingData(videoWidth, videoHeight);
+
         // Start render loop
         this.render();
 
         console.log('PNGTuber Engine ready!');
         return true;
+      }
+
+      async loadTrackingData(videoWidth, videoHeight) {
+        // Try to load NPZ first (MotionPNGTuber format)
+        const npzPath = path.join(this.basePath, 'mouth_track.npz');
+        const npzCalibratedPath = path.join(this.basePath, 'mouth_track_calibrated.npz');
+
+        // Prefer calibrated version
+        if (fs.existsSync(npzCalibratedPath)) {
+          console.log('Loading calibrated NPZ tracking data...');
+          this.usePerFrameTracking = this.mouthTrack.loadFromNPZ(npzCalibratedPath, videoWidth, videoHeight);
+        } else if (fs.existsSync(npzPath)) {
+          console.log('Loading NPZ tracking data...');
+          this.usePerFrameTracking = this.mouthTrack.loadFromNPZ(npzPath, videoWidth, videoHeight);
+        }
+
+        // Fallback to JSON if NPZ not found or failed
+        if (!this.usePerFrameTracking) {
+          const jsonPath = path.join(this.basePath, 'tracking.json');
+          if (fs.existsSync(jsonPath)) {
+            console.log('Loading JSON tracking data...');
+            this.usePerFrameTracking = this.mouthTrack.loadFromJSON(jsonPath, videoWidth, videoHeight);
+
+            // If JSON has static position only, use it as fallback
+            if (!this.usePerFrameTracking) {
+              this.mouthPosition = { ...this.mouthTrack.staticPosition };
+              this.mouthScale = this.mouthTrack.staticScale;
+              console.log('Using static position from tracking.json');
+            }
+          }
+        }
+
+        if (this.usePerFrameTracking) {
+          console.log(`Per-frame tracking enabled: ${this.mouthTrack.totalFrames} frames`);
+          this.videoFPS = this.mouthTrack.fps;
+        } else {
+          console.log('Using static mouth position (no per-frame tracking)');
+        }
+      }
+
+      /**
+       * Get current video frame index
+       */
+      getCurrentFrameIndex() {
+        if (!this.video || this.video.paused) return 0;
+
+        const currentTime = this.video.currentTime;
+        const frameIndex = Math.floor(currentTime * this.videoFPS);
+
+        return frameIndex;
       }
 
       async loadMouthSprites() {
@@ -443,17 +894,76 @@
         // Analyze audio and get mouth state
         const mouthState = this.analyzeMouth();
 
+        // Get current mouth position (per-frame or static)
+        let mouthX, mouthY, mouthWidth, mouthRotation;
+
+        if (this.usePerFrameTracking) {
+          // Get frame-synchronized position
+          const frameIndex = this.getCurrentFrameIndex();
+          const quad = this.mouthTrack.getQuad(frameIndex);
+
+          if (quad) {
+            // Calculate position from quad
+            const pos = this.mouthTrack.getPositionFromQuad(quad, this.video.videoWidth, this.video.videoHeight);
+
+            // Convert to canvas coordinates (accounting for object-fit: contain)
+            const videoAspect = this.video.videoWidth / this.video.videoHeight;
+            const canvasAspect = this.canvas.width / this.canvas.height;
+
+            let videoDisplayWidth, videoDisplayHeight, offsetX, offsetY;
+
+            if (videoAspect > canvasAspect) {
+              // Video is wider - letterbox top/bottom
+              videoDisplayWidth = this.canvas.width;
+              videoDisplayHeight = this.canvas.width / videoAspect;
+              offsetX = 0;
+              offsetY = (this.canvas.height - videoDisplayHeight) / 2;
+            } else {
+              // Video is taller - letterbox left/right
+              videoDisplayHeight = this.canvas.height;
+              videoDisplayWidth = this.canvas.height * videoAspect;
+              offsetX = (this.canvas.width - videoDisplayWidth) / 2;
+              offsetY = 0;
+            }
+
+            mouthX = offsetX + pos.x * videoDisplayWidth;
+            mouthY = offsetY + pos.y * videoDisplayHeight;
+            mouthWidth = pos.scale * videoDisplayWidth;
+            mouthRotation = pos.rotation;
+
+            // Update debug info with frame tracking
+            if (this.debugInfo.classList.contains('visible')) {
+              this.updateDebug(`Frame: ${frameIndex} | Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`);
+            }
+          } else {
+            // Fallback to static position
+            mouthX = this.canvas.width * this.mouthPosition.x;
+            mouthY = this.canvas.height * this.mouthPosition.y;
+            mouthWidth = this.canvas.width * this.mouthScale;
+            mouthRotation = 0;
+          }
+        } else {
+          // Use static position
+          mouthX = this.canvas.width * this.mouthPosition.x;
+          mouthY = this.canvas.height * this.mouthPosition.y;
+          mouthWidth = this.canvas.width * this.mouthScale;
+          mouthRotation = 0;
+        }
+
         // Draw mouth sprite if available
         const sprite = this.mouthSprites[mouthState];
         if (sprite) {
-          const videoRect = this.video.getBoundingClientRect();
-          const canvasRect = this.canvas.getBoundingClientRect();
-
-          // Calculate mouth position relative to video
-          const mouthX = this.canvas.width * this.mouthPosition.x;
-          const mouthY = this.canvas.height * this.mouthPosition.y;
-          const mouthWidth = this.canvas.width * this.mouthScale;
           const mouthHeight = mouthWidth * (sprite.height / sprite.width);
+
+          // Save context for rotation
+          this.ctx.save();
+
+          // Apply rotation around mouth center
+          if (mouthRotation !== 0) {
+            this.ctx.translate(mouthX, mouthY);
+            this.ctx.rotate(mouthRotation);
+            this.ctx.translate(-mouthX, -mouthY);
+          }
 
           this.ctx.drawImage(
             sprite,
@@ -462,6 +972,9 @@
             mouthWidth,
             mouthHeight
           );
+
+          // Restore context
+          this.ctx.restore();
         }
 
         this.currentMouth = mouthState;
