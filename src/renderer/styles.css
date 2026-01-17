@@ -104,10 +104,9 @@ html, body {
 #chat-container {
   position: absolute;
   bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 10px;
   width: 90%;
-  max-width: 300px;
+  max-width: 280px;
   z-index: 100;
   -webkit-app-region: no-drag;
 }
@@ -115,7 +114,7 @@ html, body {
 #chat-toggle {
   position: absolute;
   bottom: 5px;
-  right: 5px;
+  left: 10px;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -144,12 +143,12 @@ html, body {
 
 #chat-box {
   display: none;
-  background: rgba(20, 20, 30, 0.95);
+  background: rgba(20, 20, 30, 0.7);
   border-radius: 12px;
   padding: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
 #chat-box.visible {
