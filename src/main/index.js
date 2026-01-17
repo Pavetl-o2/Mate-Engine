@@ -120,8 +120,8 @@ function createAvatarWindow(mode) {
 
   mainWindow.loadFile(path.join(__dirname, rendererFile));
 
-  // Open DevTools only in development
-  // mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // Open DevTools for debugging
+  mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   mainWindow.on('close', (event) => {
     if (!app.isQuitting) {

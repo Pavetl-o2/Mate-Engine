@@ -290,6 +290,88 @@
       transform: translateX(-50%);
       top: 0;
     }
+
+    /* Settings dropdown menu */
+    #settings-menu {
+      position: fixed;
+      top: 50px;
+      right: 10px;
+      background: linear-gradient(135deg, #2d2d3a, #1a1a24);
+      border-radius: 10px;
+      padding: 8px 0;
+      min-width: 200px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      z-index: 1001;
+      display: none;
+      -webkit-app-region: no-drag;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #settings-menu.visible {
+      display: block;
+      animation: menuFadeIn 0.2s ease;
+    }
+
+    @keyframes menuFadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .menu-section {
+      padding: 4px 12px;
+      margin-bottom: 4px;
+    }
+
+    .menu-section-title {
+      color: #888;
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 0;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .menu-item:hover {
+      background: rgba(102, 126, 234, 0.3);
+    }
+
+    .menu-item svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      opacity: 0.8;
+    }
+
+    .menu-item .icon-python {
+      color: #3776ab;
+    }
+
+    .menu-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 8px 0;
+    }
+
+    .menu-item.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .menu-item.disabled:hover {
+      background: transparent;
+    }
   </style>
 </head>
 <body>
@@ -299,10 +381,49 @@
     <div id="debug-info"></div>
   </div>
 
-  <!-- Calibrate Button -->
-  <button id="calibrate-btn" title="Calibrar posición de boca">
+  <!-- Settings Button -->
+  <button id="calibrate-btn" title="Configuración">
     <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
   </button>
+
+  <!-- Settings Dropdown Menu -->
+  <div id="settings-menu">
+    <div class="menu-section">
+      <div class="menu-section-title">Calibración</div>
+    </div>
+    <div class="menu-item" id="menu-calibrate">
+      <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+      Calibrar Boca (Manual)
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-section">
+      <div class="menu-section-title">Herramientas Python</div>
+    </div>
+    <div class="menu-item" id="menu-gestor">
+      <svg viewBox="0 0 24 24" class="icon-python"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      Gestor de PNGTuber
+    </div>
+    <div class="menu-item" id="menu-extractor">
+      <svg viewBox="0 0 24 24" class="icon-python"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      Extractor de Bocas
+    </div>
+    <div class="menu-item" id="menu-calibrar-py">
+      <svg viewBox="0 0 24 24" class="icon-python"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+      Calibrar Boca (Avanzado)
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-section">
+      <div class="menu-section-title">Debug</div>
+    </div>
+    <div class="menu-item" id="menu-debug">
+      <svg viewBox="0 0 24 24"><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/></svg>
+      Mostrar Info Debug
+    </div>
+  </div>
 
   <!-- Calibration Overlay -->
   <div id="calibration-overlay">
@@ -363,6 +484,7 @@
     const path = require('path');
     const zlib = require('zlib');
     const { ipcRenderer } = require('electron');
+    const { spawn } = require('child_process');
 
     // ============================================
     // NPZ/NPY PARSER (for MotionPNGTuber compatibility)
@@ -635,15 +757,76 @@
       }
 
       /**
-       * Load tracking from JSON file (simpler format for manual configuration)
-       * JSON format: { frames: [[{x,y}, {x,y}, {x,y}, {x,y}], ...], fps: 30 }
-       * Or simpler: { mouth: {x, y, scale}, fps: 30 } for static position
+       * Load tracking from JSON file (multiple formats supported)
+       * MotionPNGTuber format: { frames: [{quad: [[x,y],...], valid: bool}, ...], calibration: {...} }
+       * Python tool format: { quads: [[[x,y], ...], ...], fps: 30, calibration: {...} }
+       * Static: { mouth: {x, y, scale}, fps: 30 }
        */
       loadFromJSON(filePath, targetWidth, targetHeight) {
         try {
           const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-          // Check if it has per-frame data
+          // Store calibration if present
+          if (data.calibration) {
+            this.calibration = data.calibration;
+            console.log('Loaded calibration from tracking file:', this.calibration);
+          }
+
+          // Store reference sprite size if present
+          if (data.refSpriteSize) {
+            this.refSpriteSize = data.refSpriteSize;
+          }
+
+          // Source dimensions
+          this.srcWidth = data.width || targetWidth;
+          this.srcHeight = data.height || targetHeight;
+          this.fps = data.fps || 30;
+
+          // MotionPNGTuber format: frames array with {quad, valid} objects
+          if (data.frames && Array.isArray(data.frames) && data.frames.length > 0 && data.frames[0].quad) {
+            this.totalFrames = data.frames.length;
+            this.quads = [];
+            this.valid = [];
+
+            for (const frame of data.frames) {
+              if (frame.quad && Array.isArray(frame.quad) && frame.quad.length === 4) {
+                this.quads.push(frame.quad.map(p => [p[0], p[1]]));
+                this.valid.push(frame.valid !== false);
+              } else {
+                this.quads.push(null);
+                this.valid.push(false);
+              }
+            }
+
+            this.hasData = true;
+            this._applyScaleAndCalibration(targetWidth, targetHeight);
+            this.fillInvalidFrames();
+            console.log(`Loaded MotionPNGTuber tracking: ${this.totalFrames} frames`);
+            return true;
+          }
+
+          // Python tool format with quads array
+          if (data.quads && Array.isArray(data.quads)) {
+            this.totalFrames = data.quads.length;
+            this.quads = data.quads.map(quad => {
+              if (Array.isArray(quad) && quad.length === 4) {
+                return quad.map(p => {
+                  if (Array.isArray(p)) return [p[0], p[1]];
+                  if (p && typeof p === 'object') return [p.x, p.y];
+                  return null;
+                });
+              }
+              return null;
+            });
+            this.valid = data.valid || this.quads.map(q => q !== null);
+            this.hasData = true;
+            this._applyScaleAndCalibration(targetWidth, targetHeight);
+            this.fillInvalidFrames();
+            console.log(`Loaded Python tool tracking: ${this.totalFrames} frames`);
+            return true;
+          }
+
+          // Legacy format with frames as direct quad arrays
           if (data.frames && Array.isArray(data.frames)) {
             this.totalFrames = data.frames.length;
             this.quads = data.frames.map(frame => {
@@ -653,8 +836,8 @@
               return null;
             });
             this.valid = this.quads.map(q => q !== null);
-            this.fps = data.fps || 30;
             this.hasData = true;
+            this._applyScaleAndCalibration(targetWidth, targetHeight);
             this.fillInvalidFrames();
             return true;
           }
@@ -669,6 +852,63 @@
         } catch (e) {
           console.log('Error loading JSON tracking:', e);
           return false;
+        }
+      }
+
+      /**
+       * Apply scale and calibration to quads
+       */
+      _applyScaleAndCalibration(targetWidth, targetHeight) {
+        if (!this.quads) return;
+
+        // Calculate scale factors
+        const scaleX = targetWidth / this.srcWidth;
+        const scaleY = targetHeight / this.srcHeight;
+
+        // Get calibration values
+        const cal = this.calibration || {};
+        const offset = cal.offset || [0, 0];
+        const calScale = cal.scale || 1.0;
+        const rotation = cal.rotation || 0.0;
+        const rotRad = rotation * Math.PI / 180;
+        const cosR = Math.cos(rotRad);
+        const sinR = Math.sin(rotRad);
+
+        for (let i = 0; i < this.quads.length; i++) {
+          if (!this.quads[i]) continue;
+
+          // First scale to target dimensions
+          let quad = this.quads[i].map(p => [p[0] * scaleX, p[1] * scaleY]);
+
+          // Apply calibration if present
+          if (cal.offset || cal.scale !== 1.0 || cal.rotation !== 0.0) {
+            // Calculate quad center
+            const cx = quad.reduce((s, p) => s + p[0], 0) / 4;
+            const cy = quad.reduce((s, p) => s + p[1], 0) / 4;
+
+            // Apply calibration: translate to origin, scale, rotate, translate back + offset
+            quad = quad.map(p => {
+              // Translate to origin
+              let x = p[0] - cx;
+              let y = p[1] - cy;
+
+              // Scale
+              x *= calScale;
+              y *= calScale;
+
+              // Rotate
+              const rx = x * cosR - y * sinR;
+              const ry = x * sinR + y * cosR;
+
+              // Translate back + offset (offset also scaled to target)
+              return [
+                rx + cx + offset[0] * scaleX,
+                ry + cy + offset[1] * scaleY
+              ];
+            });
+          }
+
+          this.quads[i] = quad;
         }
       }
 
@@ -770,6 +1010,9 @@
         this.mouthScale = 0.15; // Relative to video width (fallback)
         this.mouthRotation = 0;
 
+        // Calibration from Python tool
+        this.calibration = null;
+
         // Frame tracking
         this.mouthTrack = new MouthTrack();
         this.videoFPS = 30;
@@ -782,15 +1025,24 @@
       async init() {
         console.log('PNGTuber Engine initializing...');
 
-        // Check if assets exist
+        // Check for mouthless video first (generated by Python tool)
+        const mouthlessPath = path.join(this.basePath, 'video_mouthless.mp4');
         const videoPath = path.join(this.basePath, 'video.mp4');
-        if (!fs.existsSync(videoPath)) {
+
+        let selectedVideoPath;
+        if (fs.existsSync(mouthlessPath)) {
+          selectedVideoPath = mouthlessPath;
+          console.log('Using mouthless video (generated by Python tool)');
+        } else if (fs.existsSync(videoPath)) {
+          selectedVideoPath = videoPath;
+          console.log('Using original video');
+        } else {
           this.showPlaceholder('Falta video.mp4 en assets/pngtuber/');
           return false;
         }
 
         // Load video
-        this.video.src = 'file://' + videoPath.replace(/\\/g, '/');
+        this.video.src = 'file://' + selectedVideoPath.replace(/\\/g, '/');
         await this.video.play().catch(e => console.log('Video autoplay blocked:', e));
 
         // Get video metadata
@@ -822,38 +1074,57 @@
       }
 
       async loadTrackingData(videoWidth, videoHeight) {
-        // Try to load NPZ first (MotionPNGTuber format)
-        const npzPath = path.join(this.basePath, 'mouth_track.npz');
-        const npzCalibratedPath = path.join(this.basePath, 'mouth_track_calibrated.npz');
+        // Priority order for tracking data:
+        // 1. mouth_track.json (MotionPNGTuber JSON format - includes calibration)
+        // 2. mouth_track_calibrated.npz (calibrated NPZ)
+        // 3. mouth_track.npz (raw NPZ)
+        // 4. tracking.json (legacy format)
 
-        // Prefer calibrated version
-        if (fs.existsSync(npzCalibratedPath)) {
-          console.log('Loading calibrated NPZ tracking data...');
-          this.usePerFrameTracking = this.mouthTrack.loadFromNPZ(npzCalibratedPath, videoWidth, videoHeight);
-        } else if (fs.existsSync(npzPath)) {
-          console.log('Loading NPZ tracking data...');
-          this.usePerFrameTracking = this.mouthTrack.loadFromNPZ(npzPath, videoWidth, videoHeight);
+        const mouthTrackJsonPath = path.join(this.basePath, 'mouth_track.json');
+        const npzCalibratedPath = path.join(this.basePath, 'mouth_track_calibrated.npz');
+        const npzPath = path.join(this.basePath, 'mouth_track.npz');
+        const trackingJsonPath = path.join(this.basePath, 'tracking.json');
+
+        // Try mouth_track.json first (MotionPNGTuber format with embedded calibration)
+        if (fs.existsSync(mouthTrackJsonPath)) {
+          console.log('Loading mouth_track.json (MotionPNGTuber format)...');
+          this.usePerFrameTracking = this.mouthTrack.loadFromJSON(mouthTrackJsonPath, videoWidth, videoHeight);
+
+          if (this.usePerFrameTracking && this.mouthTrack.calibration) {
+            this.calibration = this.mouthTrack.calibration;
+          }
         }
 
-        // Fallback to JSON if NPZ not found or failed
+        // Try NPZ formats if JSON didn't work
         if (!this.usePerFrameTracking) {
-          const jsonPath = path.join(this.basePath, 'tracking.json');
-          if (fs.existsSync(jsonPath)) {
-            console.log('Loading JSON tracking data...');
-            this.usePerFrameTracking = this.mouthTrack.loadFromJSON(jsonPath, videoWidth, videoHeight);
+          if (fs.existsSync(npzCalibratedPath)) {
+            console.log('Loading calibrated NPZ tracking data...');
+            this.usePerFrameTracking = this.mouthTrack.loadFromNPZ(npzCalibratedPath, videoWidth, videoHeight);
+          } else if (fs.existsSync(npzPath)) {
+            console.log('Loading NPZ tracking data...');
+            this.usePerFrameTracking = this.mouthTrack.loadFromNPZ(npzPath, videoWidth, videoHeight);
+          }
+        }
 
-            // If JSON has static position only, use it as fallback
-            if (!this.usePerFrameTracking) {
-              this.mouthPosition = { ...this.mouthTrack.staticPosition };
-              this.mouthScale = this.mouthTrack.staticScale;
-              console.log('Using static position from tracking.json');
-            }
+        // Fallback to tracking.json
+        if (!this.usePerFrameTracking && fs.existsSync(trackingJsonPath)) {
+          console.log('Loading tracking.json...');
+          this.usePerFrameTracking = this.mouthTrack.loadFromJSON(trackingJsonPath, videoWidth, videoHeight);
+
+          if (!this.usePerFrameTracking && this.mouthTrack.staticPosition) {
+            this.mouthPosition = { ...this.mouthTrack.staticPosition };
+            this.mouthScale = this.mouthTrack.staticScale;
+            console.log('Using static position from tracking.json');
           }
         }
 
         if (this.usePerFrameTracking) {
           console.log(`Per-frame tracking enabled: ${this.mouthTrack.totalFrames} frames`);
           this.videoFPS = this.mouthTrack.fps;
+
+          if (this.mouthTrack.refSpriteSize) {
+            console.log('Reference sprite size:', this.mouthTrack.refSpriteSize);
+          }
         } else {
           console.log('Using static mouth position (no per-frame tracking)');
         }
@@ -1302,11 +1573,148 @@
     const keyframeCount = document.getElementById('keyframe-count');
     const keyframeMarkers = document.getElementById('keyframe-markers');
 
-    function initCalibration() {
-      // Open calibration mode
-      calibrateBtn.addEventListener('click', () => {
+    // ============================================
+    // SETTINGS MENU MODULE
+    // ============================================
+
+    const settingsMenu = document.getElementById('settings-menu');
+    const menuCalibrate = document.getElementById('menu-calibrate');
+    const menuGestor = document.getElementById('menu-gestor');
+    const menuExtractor = document.getElementById('menu-extractor');
+    const menuCalibrarPy = document.getElementById('menu-calibrar-py');
+    const menuDebug = document.getElementById('menu-debug');
+
+    let isMenuOpen = false;
+
+    function initSettingsMenu() {
+      // Toggle menu on gear button click
+      calibrateBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSettingsMenu();
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (isMenuOpen && !settingsMenu.contains(e.target) && e.target !== calibrateBtn) {
+          closeSettingsMenu();
+        }
+      });
+
+      // Menu item handlers
+      menuCalibrate.addEventListener('click', () => {
+        closeSettingsMenu();
         openCalibrationMode();
       });
+
+      menuGestor.addEventListener('click', () => {
+        closeSettingsMenu();
+        launchPythonTool('gestor_pngtuber_gui.py');
+      });
+
+      menuExtractor.addEventListener('click', () => {
+        closeSettingsMenu();
+        launchPythonTool('extractor_bocas_gui.py');
+      });
+
+      menuCalibrarPy.addEventListener('click', () => {
+        closeSettingsMenu();
+        launchPythonTool('calibrar_boca.py');
+      });
+
+      menuDebug.addEventListener('click', () => {
+        closeSettingsMenu();
+        toggleDebugInfo();
+      });
+    }
+
+    function toggleSettingsMenu() {
+      isMenuOpen = !isMenuOpen;
+      settingsMenu.classList.toggle('visible', isMenuOpen);
+    }
+
+    function closeSettingsMenu() {
+      isMenuOpen = false;
+      settingsMenu.classList.remove('visible');
+    }
+
+    function launchPythonTool(scriptName) {
+      const toolsPath = path.join(__dirname, '../../tools');
+      const scriptPath = path.join(toolsPath, scriptName);
+
+      if (!fs.existsSync(scriptPath)) {
+        showToolFeedback(`Error: No se encontró ${scriptName}`);
+        console.error(`Script not found: ${scriptPath}`);
+        return;
+      }
+
+      showToolFeedback(`Iniciando ${scriptName}...`);
+
+      // Try to find Python executable
+      const pythonCommands = ['python', 'python3', 'py'];
+      let pythonProcess = null;
+
+      for (const cmd of pythonCommands) {
+        try {
+          pythonProcess = spawn(cmd, [scriptPath], {
+            cwd: toolsPath,
+            detached: true,
+            stdio: 'ignore'
+          });
+
+          pythonProcess.unref();
+          console.log(`Launched ${scriptName} with ${cmd}`);
+          break;
+        } catch (e) {
+          console.log(`Failed to launch with ${cmd}:`, e.message);
+        }
+      }
+
+      if (!pythonProcess) {
+        showToolFeedback('Error: Python no encontrado. Instala Python 3.');
+      }
+    }
+
+    function toggleDebugInfo() {
+      const debugInfo = document.getElementById('debug-info');
+      debugInfo.classList.toggle('visible');
+      showToolFeedback(debugInfo.classList.contains('visible') ? 'Debug activado' : 'Debug desactivado');
+    }
+
+    function showToolFeedback(message) {
+      const feedback = document.createElement('div');
+      feedback.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.85);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        z-index: 2000;
+        animation: feedbackFade 2.5s ease;
+        border-left: 3px solid #667eea;
+      `;
+      feedback.textContent = message;
+      document.body.appendChild(feedback);
+
+      setTimeout(() => feedback.remove(), 2500);
+    }
+
+    // Add animation keyframes for feedback
+    const feedbackStyle = document.createElement('style');
+    feedbackStyle.textContent = `
+      @keyframes feedbackFade {
+        0% { opacity: 0; transform: translateX(20px); }
+        15% { opacity: 1; transform: translateX(0); }
+        85% { opacity: 1; transform: translateX(0); }
+        100% { opacity: 0; transform: translateX(20px); }
+      }
+    `;
+    document.head.appendChild(feedbackStyle);
+
+    function initCalibration() {
 
       // Click to position mouth
       calibrationArea.addEventListener('click', (e) => {
@@ -1830,9 +2238,10 @@
         }
       }
 
-      // Initialize chat, drag, and calibration
+      // Initialize chat, drag, calibration, and settings menu
       initChat();
       setupDragControls();
+      initSettingsMenu();
       initCalibration();
 
       console.log('PNGTuber Avatar ready!');

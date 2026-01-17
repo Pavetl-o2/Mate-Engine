@@ -33,3 +33,23 @@ config/user.json
 # API Keys (never commit!)
 api-keys.json
 secrets.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+
+# Python tools session files
+tools/.gestor_session.json
+tools/.session_state.json
+
+# MediaPipe model (downloaded automatically)
+tools/face_landmarker.task
+
+# Generated videos (optional - uncomment if too large)
+# assets/pngtuber/video_mouthless.mp4
+# assets/pngtuber/video_mouthless_temp.mp4
