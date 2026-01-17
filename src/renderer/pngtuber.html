@@ -201,6 +201,93 @@
       width: 120px;
       cursor: pointer;
     }
+
+    /* Frame navigation controls */
+    #frame-control {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.85);
+      padding: 12px 15px;
+      border-radius: 20px;
+      z-index: 1001;
+    }
+
+    #frame-control button {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: #555;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    #frame-control button:hover {
+      background: #777;
+    }
+
+    #frame-control button.active {
+      background: #00c853;
+    }
+
+    #frame-slider {
+      width: 150px;
+      cursor: pointer;
+    }
+
+    #frame-info {
+      color: white;
+      font-family: monospace;
+      font-size: 11px;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    #add-keyframe {
+      background: linear-gradient(135deg, #ff9800, #f57c00) !important;
+      width: auto !important;
+      padding: 0 12px !important;
+      border-radius: 16px !important;
+      font-size: 11px !important;
+    }
+
+    #keyframe-count {
+      color: #ff9800;
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+    }
+
+    /* Keyframe markers on slider */
+    #keyframe-markers {
+      position: absolute;
+      bottom: 155px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 8px;
+      margin-left: 60px;
+      pointer-events: none;
+    }
+
+    .keyframe-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #ff9800;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      top: 0;
+    }
   </style>
 </head>
 <body>
@@ -218,11 +305,25 @@
   <!-- Calibration Overlay -->
   <div id="calibration-overlay">
     <div id="calibration-instructions">
-      <strong>Modo Calibración</strong><br>
-      Haz clic en el avatar donde debe estar la boca
+      <strong>Modo Calibración con Keyframes</strong><br>
+      1. Navega por los frames del video<br>
+      2. Posiciona la boca y presiona "+ Keyframe" para marcar<br>
+      3. Repite en varios puntos del loop para tracking dinámico
     </div>
     <div id="calibration-area"></div>
     <div id="mouth-marker"></div>
+    <div id="keyframe-markers"></div>
+    <div id="frame-control">
+      <button id="frame-prev-10" title="Retroceder 10 frames">⏪</button>
+      <button id="frame-prev" title="Frame anterior">◀</button>
+      <button id="frame-play" title="Play/Pause">⏸</button>
+      <button id="frame-next" title="Frame siguiente">▶</button>
+      <button id="frame-next-10" title="Avanzar 10 frames">⏩</button>
+      <input type="range" id="frame-slider" min="0" max="100" value="0">
+      <span id="frame-info">0 / 0</span>
+      <button id="add-keyframe" title="Agregar keyframe en este frame">+ Keyframe</button>
+      <span id="keyframe-count">0 keys</span>
+    </div>
     <div id="scale-control">
       <label>Tamaño:</label>
       <input type="range" id="scale-slider" min="5" max="40" value="15">
@@ -1165,12 +1266,18 @@
     }
 
     // ============================================
-    // CALIBRATION MODULE
+    // CALIBRATION MODULE WITH KEYFRAME SUPPORT
     // ============================================
 
     let isCalibrating = false;
     let calibrationPos = { x: 0.5, y: 0.7 };
-    let calibrationScale = 0.15;
+    let calibrationScale = 15; // percentage
+
+    // Keyframe tracking
+    let keyframes = {}; // { frameIndex: { x, y, scale } }
+    let totalFrames = 0;
+    let currentFrame = 0;
+    let isVideoPlaying = false;
 
     const calibrateBtn = document.getElementById('calibrate-btn');
     const calibrationOverlay = document.getElementById('calibration-overlay');
@@ -1180,6 +1287,18 @@
     const scaleValue = document.getElementById('scale-value');
     const saveCalibration = document.getElementById('save-calibration');
     const cancelCalibration = document.getElementById('cancel-calibration');
+
+    // Frame control elements
+    const framePrev10 = document.getElementById('frame-prev-10');
+    const framePrev = document.getElementById('frame-prev');
+    const framePlay = document.getElementById('frame-play');
+    const frameNext = document.getElementById('frame-next');
+    const frameNext10 = document.getElementById('frame-next-10');
+    const frameSlider = document.getElementById('frame-slider');
+    const frameInfo = document.getElementById('frame-info');
+    const addKeyframeBtn = document.getElementById('add-keyframe');
+    const keyframeCount = document.getElementById('keyframe-count');
+    const keyframeMarkers = document.getElementById('keyframe-markers');
 
     function initCalibration() {
       // Open calibration mode
@@ -1229,6 +1348,22 @@
         }
       });
 
+      // Frame navigation controls
+      framePrev10.addEventListener('click', () => seekFrame(-10));
+      framePrev.addEventListener('click', () => seekFrame(-1));
+      frameNext.addEventListener('click', () => seekFrame(1));
+      frameNext10.addEventListener('click', () => seekFrame(10));
+
+      framePlay.addEventListener('click', toggleVideoPlay);
+
+      frameSlider.addEventListener('input', (e) => {
+        const frame = parseInt(e.target.value);
+        goToFrame(frame);
+      });
+
+      // Add keyframe button
+      addKeyframeBtn.addEventListener('click', addKeyframe);
+
       // Save button
       saveCalibration.addEventListener('click', () => {
         saveCalibrationData();
@@ -1238,14 +1373,65 @@
       // Cancel button
       cancelCalibration.addEventListener('click', () => {
         closeCalibrationMode();
-        // Restore previous position
-        loadTrackingData();
+        // Restore video playback
+        if (pngtuber && pngtuber.video) {
+          pngtuber.video.play();
+        }
+        // Reload tracking data
+        reloadTrackingData();
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if (!isCalibrating) return;
+
+        switch(e.key) {
+          case 'ArrowLeft':
+            seekFrame(e.shiftKey ? -10 : -1);
+            e.preventDefault();
+            break;
+          case 'ArrowRight':
+            seekFrame(e.shiftKey ? 10 : 1);
+            e.preventDefault();
+            break;
+          case ' ':
+            toggleVideoPlay();
+            e.preventDefault();
+            break;
+          case 'k':
+          case 'K':
+            addKeyframe();
+            e.preventDefault();
+            break;
+        }
       });
     }
 
     function openCalibrationMode() {
       isCalibrating = true;
       calibrationOverlay.classList.add('visible');
+
+      // Pause video for frame-by-frame control
+      if (pngtuber && pngtuber.video) {
+        pngtuber.video.pause();
+        isVideoPlaying = false;
+        framePlay.textContent = '▶';
+
+        // Calculate total frames
+        const duration = pngtuber.video.duration;
+        const fps = pngtuber.videoFPS || 30;
+        totalFrames = Math.floor(duration * fps);
+
+        // Setup frame slider
+        frameSlider.max = totalFrames - 1;
+        frameSlider.value = 0;
+
+        // Go to first frame
+        goToFrame(0);
+      }
+
+      // Load existing keyframes from tracking data
+      loadExistingKeyframes();
 
       // Set initial marker position
       if (pngtuber) {
@@ -1256,11 +1442,222 @@
       scaleSlider.value = calibrationScale;
       scaleValue.textContent = `${Math.round(calibrationScale)}%`;
       updateMarkerPosition();
+      updateKeyframeMarkers();
     }
 
     function closeCalibrationMode() {
       isCalibrating = false;
       calibrationOverlay.classList.remove('visible');
+
+      // Resume video playback
+      if (pngtuber && pngtuber.video) {
+        pngtuber.video.play();
+      }
+    }
+
+    function seekFrame(delta) {
+      const newFrame = Math.max(0, Math.min(totalFrames - 1, currentFrame + delta));
+      goToFrame(newFrame);
+    }
+
+    function goToFrame(frameIndex) {
+      if (!pngtuber || !pngtuber.video) return;
+
+      currentFrame = frameIndex;
+      const fps = pngtuber.videoFPS || 30;
+      const time = frameIndex / fps;
+
+      pngtuber.video.currentTime = time;
+      frameSlider.value = frameIndex;
+      frameInfo.textContent = `${frameIndex} / ${totalFrames - 1}`;
+
+      // Update mouth position based on interpolated keyframes
+      const interpolatedPos = getInterpolatedPosition(frameIndex);
+      calibrationPos.x = interpolatedPos.x;
+      calibrationPos.y = interpolatedPos.y;
+      calibrationScale = interpolatedPos.scale * 100;
+
+      scaleSlider.value = calibrationScale;
+      scaleValue.textContent = `${Math.round(calibrationScale)}%`;
+      updateMarkerPosition();
+
+      // Live preview
+      if (pngtuber) {
+        pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
+      }
+
+      // Highlight if this frame is a keyframe
+      if (keyframes[frameIndex]) {
+        addKeyframeBtn.classList.add('active');
+        addKeyframeBtn.textContent = '✓ Keyframe';
+      } else {
+        addKeyframeBtn.classList.remove('active');
+        addKeyframeBtn.textContent = '+ Keyframe';
+      }
+    }
+
+    function toggleVideoPlay() {
+      if (!pngtuber || !pngtuber.video) return;
+
+      if (isVideoPlaying) {
+        pngtuber.video.pause();
+        framePlay.textContent = '▶';
+      } else {
+        pngtuber.video.play();
+        framePlay.textContent = '⏸';
+        // Update frame position during playback
+        requestAnimationFrame(updateFrameDuringPlayback);
+      }
+      isVideoPlaying = !isVideoPlaying;
+    }
+
+    function updateFrameDuringPlayback() {
+      if (!isVideoPlaying || !isCalibrating) return;
+
+      const fps = pngtuber.videoFPS || 30;
+      currentFrame = Math.floor(pngtuber.video.currentTime * fps);
+      frameSlider.value = currentFrame;
+      frameInfo.textContent = `${currentFrame} / ${totalFrames - 1}`;
+
+      requestAnimationFrame(updateFrameDuringPlayback);
+    }
+
+    function addKeyframe() {
+      // Toggle keyframe at current frame
+      if (keyframes[currentFrame]) {
+        // Remove keyframe
+        delete keyframes[currentFrame];
+        addKeyframeBtn.classList.remove('active');
+        addKeyframeBtn.textContent = '+ Keyframe';
+      } else {
+        // Add keyframe with current position
+        keyframes[currentFrame] = {
+          x: calibrationPos.x,
+          y: calibrationPos.y,
+          scale: calibrationScale / 100
+        };
+        addKeyframeBtn.classList.add('active');
+        addKeyframeBtn.textContent = '✓ Keyframe';
+      }
+
+      updateKeyframeMarkers();
+      keyframeCount.textContent = `${Object.keys(keyframes).length} keys`;
+    }
+
+    function updateKeyframeMarkers() {
+      keyframeMarkers.innerHTML = '';
+      const keys = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
+
+      keys.forEach(frame => {
+        const dot = document.createElement('div');
+        dot.className = 'keyframe-dot';
+        dot.style.left = `${(frame / (totalFrames - 1)) * 100}%`;
+        dot.title = `Frame ${frame}`;
+        keyframeMarkers.appendChild(dot);
+      });
+
+      keyframeCount.textContent = `${keys.length} keys`;
+    }
+
+    function getInterpolatedPosition(frameIndex) {
+      const keys = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
+
+      if (keys.length === 0) {
+        // No keyframes, return default
+        return { x: 0.5, y: 0.7, scale: 0.15 };
+      }
+
+      if (keys.length === 1) {
+        // Only one keyframe, use it for all frames
+        return keyframes[keys[0]];
+      }
+
+      // Find surrounding keyframes
+      let prevKey = null;
+      let nextKey = null;
+
+      for (let i = 0; i < keys.length; i++) {
+        if (keys[i] <= frameIndex) {
+          prevKey = keys[i];
+        }
+        if (keys[i] >= frameIndex && nextKey === null) {
+          nextKey = keys[i];
+        }
+      }
+
+      // Handle edge cases
+      if (prevKey === null) {
+        // Before first keyframe - also check wrap-around
+        const lastKey = keys[keys.length - 1];
+        const firstKey = keys[0];
+
+        // Interpolate from last keyframe (wrapping around)
+        const wrapDistance = (totalFrames - lastKey) + frameIndex;
+        const totalDistance = (totalFrames - lastKey) + firstKey;
+        const t = wrapDistance / totalDistance;
+
+        return interpolateKeyframes(keyframes[lastKey], keyframes[firstKey], t);
+      }
+
+      if (nextKey === null) {
+        // After last keyframe - wrap to first
+        const lastKey = keys[keys.length - 1];
+        const firstKey = keys[0];
+
+        const wrapDistance = frameIndex - lastKey;
+        const totalDistance = (totalFrames - lastKey) + firstKey;
+        const t = wrapDistance / totalDistance;
+
+        return interpolateKeyframes(keyframes[lastKey], keyframes[firstKey], t);
+      }
+
+      if (prevKey === nextKey) {
+        // Exact match
+        return keyframes[prevKey];
+      }
+
+      // Interpolate between prev and next
+      const t = (frameIndex - prevKey) / (nextKey - prevKey);
+      return interpolateKeyframes(keyframes[prevKey], keyframes[nextKey], t);
+    }
+
+    function interpolateKeyframes(a, b, t) {
+      // Smooth interpolation using ease-in-out
+      const smoothT = t * t * (3 - 2 * t);
+
+      return {
+        x: a.x + (b.x - a.x) * smoothT,
+        y: a.y + (b.y - a.y) * smoothT,
+        scale: a.scale + (b.scale - a.scale) * smoothT
+      };
+    }
+
+    function loadExistingKeyframes() {
+      keyframes = {};
+
+      // Try to load from existing tracking.json
+      const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
+      if (fs.existsSync(trackingPath)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(trackingPath, 'utf8'));
+
+          if (data.keyframes) {
+            // Load keyframe data
+            keyframes = data.keyframes;
+          } else if (data.mouth) {
+            // Convert static position to keyframe at frame 0
+            keyframes[0] = {
+              x: data.mouth.x,
+              y: data.mouth.y,
+              scale: data.mouth.scale
+            };
+          }
+        } catch (e) {
+          console.log('Error loading existing keyframes:', e);
+        }
+      }
+
+      updateKeyframeMarkers();
     }
 
     function updateMarkerPosition() {
@@ -1273,29 +1670,79 @@
 
     function saveCalibrationData() {
       const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
-      const trackingData = {
-        mouth: {
-          x: calibrationPos.x,
-          y: calibrationPos.y,
-          scale: calibrationScale / 100
-        },
-        savedAt: new Date().toISOString()
-      };
+      const keys = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
+
+      let trackingData;
+
+      if (keys.length > 1) {
+        // Multiple keyframes - save for per-frame interpolation
+        // Generate full frame data by interpolating all frames
+        const frames = [];
+        const fps = pngtuber?.videoFPS || 30;
+
+        for (let i = 0; i < totalFrames; i++) {
+          const pos = getInterpolatedPosition(i);
+          // Store as quad format (4 corners) for compatibility
+          const w = pos.scale * (pngtuber?.video?.videoWidth || 640);
+          const h = w * 0.5; // Assume mouth height is half of width
+          const cx = pos.x * (pngtuber?.video?.videoWidth || 640);
+          const cy = pos.y * (pngtuber?.video?.videoHeight || 480);
+
+          frames.push([
+            { x: cx - w/2, y: cy - h/2 },  // top-left
+            { x: cx + w/2, y: cy - h/2 },  // top-right
+            { x: cx + w/2, y: cy + h/2 },  // bottom-right
+            { x: cx - w/2, y: cy + h/2 }   // bottom-left
+          ]);
+        }
+
+        trackingData = {
+          keyframes: keyframes,
+          frames: frames,
+          fps: fps,
+          totalFrames: totalFrames,
+          videoWidth: pngtuber?.video?.videoWidth || 640,
+          videoHeight: pngtuber?.video?.videoHeight || 480,
+          savedAt: new Date().toISOString()
+        };
+      } else {
+        // Single or no keyframe - save as static position
+        const pos = keys.length === 1 ? keyframes[keys[0]] : { x: calibrationPos.x, y: calibrationPos.y, scale: calibrationScale / 100 };
+
+        trackingData = {
+          mouth: {
+            x: pos.x,
+            y: pos.y,
+            scale: pos.scale
+          },
+          keyframes: keyframes,
+          savedAt: new Date().toISOString()
+        };
+      }
 
       try {
         fs.writeFileSync(trackingPath, JSON.stringify(trackingData, null, 2));
         console.log('Calibration saved:', trackingData);
 
-        // Apply to engine
-        if (pngtuber) {
-          pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
-        }
+        // Reload tracking data to apply changes
+        reloadTrackingData();
 
         // Show success feedback
-        showCalibrationFeedback('✓ Posición guardada');
+        const keyCount = keys.length;
+        showCalibrationFeedback(keyCount > 1
+          ? `✓ Guardado: ${keyCount} keyframes (tracking dinámico)`
+          : '✓ Posición guardada');
       } catch (e) {
         console.error('Error saving calibration:', e);
         showCalibrationFeedback('✗ Error al guardar');
+      }
+    }
+
+    async function reloadTrackingData() {
+      if (pngtuber) {
+        const videoWidth = pngtuber.video?.videoWidth || 640;
+        const videoHeight = pngtuber.video?.videoHeight || 480;
+        await pngtuber.loadTrackingData(videoWidth, videoHeight);
       }
     }
 
