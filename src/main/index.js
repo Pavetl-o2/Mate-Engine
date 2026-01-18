@@ -103,9 +103,15 @@ function createAvatarWindow(mode) {
     focusable: true,
     resizable: false,
     hasShadow: false,
+    // Fix for Windows transparent window gray border
+    backgroundColor: '#00000000',
+    roundedCorners: false,
+    thickFrame: false,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      // Enable hardware acceleration for transparency
+      offscreen: false
     }
   });
 

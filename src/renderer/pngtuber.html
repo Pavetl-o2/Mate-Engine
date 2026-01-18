@@ -53,8 +53,8 @@
       display: block;
     }
 
-    /* Calibration mode */
-    #calibrate-btn {
+    /* Settings button */
+    #settings-btn {
       position: fixed;
       top: 10px;
       right: 10px;
@@ -73,222 +73,15 @@
       transition: opacity 0.3s, transform 0.2s;
     }
 
-    #calibrate-btn:hover {
+    #settings-btn:hover {
       opacity: 1;
       transform: scale(1.1);
     }
 
-    #calibrate-btn svg {
+    #settings-btn svg {
       width: 20px;
       height: 20px;
       fill: white;
-    }
-
-    #calibration-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      -webkit-app-region: no-drag;
-    }
-
-    #calibration-overlay.visible {
-      display: flex;
-    }
-
-    #calibration-instructions {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 0 0 10px 10px;
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-      text-align: center;
-      max-width: 90%;
-    }
-
-    #calibration-area {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      cursor: crosshair;
-    }
-
-    #mouth-marker {
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      border: 3px dashed #00ff00;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-    }
-
-    #mouth-marker::before {
-      content: '+';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #00ff00;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    #calibration-controls {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
-      z-index: 1001;
-    }
-
-    #calibration-controls button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 20px;
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    #calibration-controls button:hover {
-      transform: scale(1.05);
-    }
-
-    #save-calibration {
-      background: linear-gradient(135deg, #00c853, #00e676);
-      color: white;
-    }
-
-    #cancel-calibration {
-      background: linear-gradient(135deg, #ff5252, #ff1744);
-      color: white;
-    }
-
-    #scale-control {
-      position: fixed;
-      bottom: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(0,0,0,0.7);
-      padding: 10px 15px;
-      border-radius: 20px;
-      z-index: 1001;
-    }
-
-    #scale-control label {
-      color: white;
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-    }
-
-    #scale-slider {
-      width: 120px;
-      cursor: pointer;
-    }
-
-    /* Frame navigation controls */
-    #frame-control {
-      position: fixed;
-      bottom: 120px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0,0,0,0.85);
-      padding: 12px 15px;
-      border-radius: 20px;
-      z-index: 1001;
-    }
-
-    #frame-control button {
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: 50%;
-      background: #555;
-      color: white;
-      font-size: 14px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    #frame-control button:hover {
-      background: #777;
-    }
-
-    #frame-control button.active {
-      background: #00c853;
-    }
-
-    #frame-slider {
-      width: 150px;
-      cursor: pointer;
-    }
-
-    #frame-info {
-      color: white;
-      font-family: monospace;
-      font-size: 11px;
-      min-width: 80px;
-      text-align: center;
-    }
-
-    #add-keyframe {
-      background: linear-gradient(135deg, #ff9800, #f57c00) !important;
-      width: auto !important;
-      padding: 0 12px !important;
-      border-radius: 16px !important;
-      font-size: 11px !important;
-    }
-
-    #keyframe-count {
-      color: #ff9800;
-      font-family: Arial, sans-serif;
-      font-size: 10px;
-    }
-
-    /* Keyframe markers on slider */
-    #keyframe-markers {
-      position: absolute;
-      bottom: 155px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 150px;
-      height: 8px;
-      margin-left: 60px;
-      pointer-events: none;
-    }
-
-    .keyframe-dot {
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background: #ff9800;
-      border-radius: 50%;
-      transform: translateX(-50%);
-      top: 0;
     }
 
     /* Settings dropdown menu */
@@ -382,22 +175,12 @@
   </div>
 
   <!-- Settings Button -->
-  <button id="calibrate-btn" title="Configuración">
+  <button id="settings-btn" title="Configuración">
     <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
   </button>
 
   <!-- Settings Dropdown Menu -->
   <div id="settings-menu">
-    <div class="menu-section">
-      <div class="menu-section-title">Calibración</div>
-    </div>
-    <div class="menu-item" id="menu-calibrate">
-      <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
-      Calibrar Boca (Manual)
-    </div>
-
-    <div class="menu-divider"></div>
-
     <div class="menu-section">
       <div class="menu-section-title">Herramientas Python</div>
     </div>
@@ -424,44 +207,6 @@
       Mostrar Info Debug
     </div>
   </div>
-
-  <!-- Calibration Overlay -->
-  <div id="calibration-overlay">
-    <div id="calibration-instructions">
-      <strong>Modo Calibración con Keyframes</strong><br>
-      1. Navega por los frames del video<br>
-      2. Posiciona la boca y presiona "+ Keyframe" para marcar<br>
-      3. Repite en varios puntos del loop para tracking dinámico
-    </div>
-    <div id="calibration-area"></div>
-    <div id="mouth-marker"></div>
-    <div id="keyframe-markers"></div>
-    <div id="frame-control">
-      <button id="frame-prev-10" title="Retroceder 10 frames">⏪</button>
-      <button id="frame-prev" title="Frame anterior">◀</button>
-      <button id="frame-play" title="Play/Pause">⏸</button>
-      <button id="frame-next" title="Frame siguiente">▶</button>
-      <button id="frame-next-10" title="Avanzar 10 frames">⏩</button>
-      <input type="range" id="frame-slider" min="0" max="100" value="0">
-      <span id="frame-info">0 / 0</span>
-      <button id="add-keyframe" title="Agregar keyframe en este frame">+ Keyframe</button>
-      <span id="keyframe-count">0 keys</span>
-    </div>
-    <div id="scale-control">
-      <label>Tamaño:</label>
-      <input type="range" id="scale-slider" min="5" max="40" value="15">
-      <span id="scale-value">15%</span>
-    </div>
-    <div id="calibration-controls">
-      <button id="save-calibration">✓ Guardar</button>
-      <button id="cancel-calibration">✗ Cancelar</button>
-    </div>
-  </div>
-
-  <!-- Chat Toggle Button -->
-  <button id="chat-toggle" title="Chat">
-    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-  </button>
 
   <!-- Chat Box -->
   <div id="chat-container">
@@ -1010,6 +755,22 @@
         this.mouthScale = 0.15; // Relative to video width (fallback)
         this.mouthRotation = 0;
 
+        // Audio analysis arrays (initialized in connectAudio)
+        this.timeDataArray = null;
+        this.freqDataArray = null;
+
+        // Lip-sync smoothing state
+        this.lipSyncState = {
+          rms: 0,
+          high: 0,
+          low: 0,
+          smoothRms: 0,
+          smoothHigh: 0,
+          smoothLow: 0,
+          lastMouthState: 'closed',
+          stateTimer: 0
+        };
+
         // Calibration from Python tool
         this.calibration = null;
 
@@ -1203,20 +964,96 @@
         // Create audio source from element
         const source = this.audioContext.createMediaElementSource(audioElement);
 
-        // Create analyser
+        // Create analyser with larger FFT for better frequency resolution
         this.analyser = this.audioContext.createAnalyser();
-        this.analyser.fftSize = 256;
-        this.analyser.smoothingTimeConstant = 0.8;
+        this.analyser.fftSize = 512;
+        this.analyser.smoothingTimeConstant = 0.5; // Less smoothing for more responsive lip-sync
 
         // Connect: source -> analyser -> destination
         source.connect(this.analyser);
         this.analyser.connect(this.audioContext.destination);
 
-        // Create data array for frequency data
-        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+        // Create data arrays for both time domain (RMS) and frequency analysis
+        this.timeDataArray = new Float32Array(this.analyser.fftSize);
+        this.freqDataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+        // Lip-sync state for smooth transitions
+        this.lipSyncState = {
+          rms: 0,
+          high: 0,
+          low: 0,
+          smoothRms: 0,
+          smoothHigh: 0,
+          smoothLow: 0,
+          lastMouthState: 'closed',
+          stateTimer: 0
+        };
 
         this.isAnalyzing = true;
-        console.log('Audio connected for lip-sync');
+        console.log('Audio connected for lip-sync (MotionPNGTuber compatible)');
+      }
+
+      /**
+       * Process audio data like MotionPNGTuber format
+       * Can also receive external data: { rms, high, low }
+       */
+      processAudioData(externalData = null) {
+        if (externalData) {
+          // External data input (MotionPNGTuber compatible API)
+          this.lipSyncState.rms = externalData.rms || 0;
+          this.lipSyncState.high = externalData.high || 0;
+          this.lipSyncState.low = externalData.low || 0;
+          return;
+        }
+
+        if (!this.analyser) return;
+
+        // Get time domain data for accurate RMS calculation
+        this.analyser.getFloatTimeDomainData(this.timeDataArray);
+
+        // Calculate RMS from time domain data (proper volume measurement)
+        let sumSquares = 0;
+        for (let i = 0; i < this.timeDataArray.length; i++) {
+          sumSquares += this.timeDataArray[i] * this.timeDataArray[i];
+        }
+        const rms = Math.sqrt(sumSquares / this.timeDataArray.length);
+
+        // Get frequency data for high/low analysis
+        this.analyser.getByteFrequencyData(this.freqDataArray);
+
+        // Divide frequency spectrum into low and high bands
+        // Low: 0-500Hz (roughly bins 0-23 at 44.1kHz with 512 FFT)
+        // High: 500Hz+ (bins 24+)
+        const binCount = this.freqDataArray.length;
+        const lowBinEnd = Math.floor(binCount * 0.18); // ~500Hz
+        const highBinStart = Math.floor(binCount * 0.18);
+
+        let lowSum = 0, highSum = 0;
+        let lowCount = 0, highCount = 0;
+
+        for (let i = 0; i < lowBinEnd; i++) {
+          lowSum += this.freqDataArray[i];
+          lowCount++;
+        }
+        for (let i = highBinStart; i < binCount; i++) {
+          highSum += this.freqDataArray[i];
+          highCount++;
+        }
+
+        // Normalize to 0.0-1.0 range
+        const low = lowCount > 0 ? (lowSum / lowCount) / 255 : 0;
+        const high = highCount > 0 ? (highSum / highCount) / 255 : 0;
+
+        // Store raw values
+        this.lipSyncState.rms = Math.min(1, rms * 3); // Scale up RMS for sensitivity
+        this.lipSyncState.high = high;
+        this.lipSyncState.low = low;
+
+        // Apply smoothing for natural transitions
+        const smoothFactor = 0.3; // Lower = smoother
+        this.lipSyncState.smoothRms = this.lipSyncState.smoothRms * (1 - smoothFactor) + this.lipSyncState.rms * smoothFactor;
+        this.lipSyncState.smoothHigh = this.lipSyncState.smoothHigh * (1 - smoothFactor) + this.lipSyncState.high * smoothFactor;
+        this.lipSyncState.smoothLow = this.lipSyncState.smoothLow * (1 - smoothFactor) + this.lipSyncState.low * smoothFactor;
       }
 
       analyzeMouth() {
@@ -1224,41 +1061,54 @@
           return 'closed';
         }
 
-        this.analyser.getByteFrequencyData(this.dataArray);
+        // Process audio to update lip-sync state
+        this.processAudioData();
 
-        // Calculate RMS (volume)
-        let sum = 0;
-        for (let i = 0; i < this.dataArray.length; i++) {
-          sum += this.dataArray[i] * this.dataArray[i];
-        }
-        const rms = Math.sqrt(sum / this.dataArray.length);
-
-        // Calculate frequency ratio (low vs high)
-        const midPoint = Math.floor(this.dataArray.length / 2);
-        let lowSum = 0, highSum = 0;
-        for (let i = 0; i < midPoint; i++) {
-          lowSum += this.dataArray[i];
-        }
-        for (let i = midPoint; i < this.dataArray.length; i++) {
-          highSum += this.dataArray[i];
-        }
-        const freqRatio = lowSum / (highSum + 1);
+        const { smoothRms, smoothHigh, smoothLow } = this.lipSyncState;
 
         // Update debug info
-        this.updateDebug(`RMS: ${rms.toFixed(1)} | Ratio: ${freqRatio.toFixed(2)}`);
+        this.updateDebug(`RMS: ${smoothRms.toFixed(3)} | H: ${smoothHigh.toFixed(3)} | L: ${smoothLow.toFixed(3)}`);
 
-        // Determine mouth state based on audio analysis
-        if (rms < 10) {
-          return 'closed';
-        } else if (rms < 30) {
-          return 'half';
-        } else if (freqRatio > 2) {
-          return 'u'; // Low frequencies = 'u' shape
-        } else if (freqRatio < 0.8) {
-          return 'e'; // High frequencies = 'e' shape
+        // Determine mouth state based on audio analysis (MotionPNGTuber style)
+        // Thresholds calibrated for normalized 0.0-1.0 values
+        const volumeThreshold = 0.02;  // Minimum volume to open mouth
+        const halfThreshold = 0.08;    // Volume for half-open
+        const openThreshold = 0.15;    // Volume for fully open
+
+        let newState;
+
+        if (smoothRms < volumeThreshold) {
+          newState = 'closed';
+        } else if (smoothRms < halfThreshold) {
+          newState = 'half';
         } else {
-          return 'open';
+          // Use frequency analysis for vowel shapes when volume is high enough
+          const freqRatio = smoothLow / (smoothHigh + 0.001);
+
+          if (freqRatio > 1.5 && smoothLow > 0.1) {
+            newState = 'u'; // Low frequencies dominant = 'u' shape
+          } else if (freqRatio < 0.7 && smoothHigh > 0.1) {
+            newState = 'e'; // High frequencies dominant = 'e' shape
+          } else if (smoothRms > openThreshold) {
+            newState = 'open';
+          } else {
+            newState = 'half';
+          }
         }
+
+        // State transition smoothing - prevent rapid flickering
+        if (newState !== this.lipSyncState.lastMouthState) {
+          this.lipSyncState.stateTimer++;
+          // Require state to be stable for 2 frames before changing
+          if (this.lipSyncState.stateTimer >= 2) {
+            this.lipSyncState.lastMouthState = newState;
+            this.lipSyncState.stateTimer = 0;
+          }
+        } else {
+          this.lipSyncState.stateTimer = 0;
+        }
+
+        return this.lipSyncState.lastMouthState;
       }
 
       render() {
@@ -1384,10 +1234,20 @@
 
       stopAnalysis() {
         this.isAnalyzing = false;
+        // Reset to closed mouth when audio stops
+        this.lipSyncState.lastMouthState = 'closed';
+        this.lipSyncState.smoothRms = 0;
+        this.lipSyncState.smoothHigh = 0;
+        this.lipSyncState.smoothLow = 0;
       }
 
       startAnalysis() {
         this.isAnalyzing = true;
+        // Reset smoothing state for fresh start
+        this.lipSyncState.smoothRms = 0;
+        this.lipSyncState.smoothHigh = 0;
+        this.lipSyncState.smoothLow = 0;
+        this.lipSyncState.stateTimer = 0;
       }
     }
 
@@ -1397,11 +1257,9 @@
 
     const WEBHOOK_URL = 'https://n8n.srv775163.hstgr.cloud/webhook/desktop-avatar';
 
-    let isChatOpen = false;
     let isProcessing = false;
     let pngtuber = null;
 
-    const chatToggle = document.getElementById('chat-toggle');
     const chatBox = document.getElementById('chat-box');
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
@@ -1409,7 +1267,10 @@
     const ttsAudio = document.getElementById('tts-audio');
 
     function initChat() {
-      chatToggle.addEventListener('click', toggleChat);
+      // Auto-open chat on initialization
+      chatBox.classList.add('visible');
+      chatInput.focus();
+
       chatSend.addEventListener('click', sendMessage);
       chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -1438,14 +1299,6 @@
       });
 
       console.log('Chat initialized');
-    }
-
-    function toggleChat() {
-      isChatOpen = !isChatOpen;
-      chatBox.classList.toggle('visible', isChatOpen);
-      if (isChatOpen) {
-        chatInput.focus();
-      }
     }
 
     function addMessage(text, type = 'user') {
@@ -1539,46 +1392,11 @@
     }
 
     // ============================================
-    // CALIBRATION MODULE WITH KEYFRAME SUPPORT
-    // ============================================
-
-    let isCalibrating = false;
-    let calibrationPos = { x: 0.5, y: 0.7 };
-    let calibrationScale = 15; // percentage
-
-    // Keyframe tracking
-    let keyframes = {}; // { frameIndex: { x, y, scale } }
-    let totalFrames = 0;
-    let currentFrame = 0;
-    let isVideoPlaying = false;
-
-    const calibrateBtn = document.getElementById('calibrate-btn');
-    const calibrationOverlay = document.getElementById('calibration-overlay');
-    const calibrationArea = document.getElementById('calibration-area');
-    const mouthMarker = document.getElementById('mouth-marker');
-    const scaleSlider = document.getElementById('scale-slider');
-    const scaleValue = document.getElementById('scale-value');
-    const saveCalibration = document.getElementById('save-calibration');
-    const cancelCalibration = document.getElementById('cancel-calibration');
-
-    // Frame control elements
-    const framePrev10 = document.getElementById('frame-prev-10');
-    const framePrev = document.getElementById('frame-prev');
-    const framePlay = document.getElementById('frame-play');
-    const frameNext = document.getElementById('frame-next');
-    const frameNext10 = document.getElementById('frame-next-10');
-    const frameSlider = document.getElementById('frame-slider');
-    const frameInfo = document.getElementById('frame-info');
-    const addKeyframeBtn = document.getElementById('add-keyframe');
-    const keyframeCount = document.getElementById('keyframe-count');
-    const keyframeMarkers = document.getElementById('keyframe-markers');
-
-    // ============================================
     // SETTINGS MENU MODULE
     // ============================================
 
+    const settingsBtn = document.getElementById('settings-btn');
     const settingsMenu = document.getElementById('settings-menu');
-    const menuCalibrate = document.getElementById('menu-calibrate');
     const menuGestor = document.getElementById('menu-gestor');
     const menuExtractor = document.getElementById('menu-extractor');
     const menuCalibrarPy = document.getElementById('menu-calibrar-py');
@@ -1588,24 +1406,19 @@
 
     function initSettingsMenu() {
       // Toggle menu on gear button click
-      calibrateBtn.addEventListener('click', (e) => {
+      settingsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleSettingsMenu();
       });
 
       // Close menu when clicking outside
       document.addEventListener('click', (e) => {
-        if (isMenuOpen && !settingsMenu.contains(e.target) && e.target !== calibrateBtn) {
+        if (isMenuOpen && !settingsMenu.contains(e.target) && e.target !== settingsBtn) {
           closeSettingsMenu();
         }
       });
 
       // Menu item handlers
-      menuCalibrate.addEventListener('click', () => {
-        closeSettingsMenu();
-        openCalibrationMode();
-      });
-
       menuGestor.addEventListener('click', () => {
         closeSettingsMenu();
         launchPythonTool('gestor_pngtuber_gui.py');
@@ -1714,501 +1527,6 @@
     `;
     document.head.appendChild(feedbackStyle);
 
-    function initCalibration() {
-
-      // Click to position mouth
-      calibrationArea.addEventListener('click', (e) => {
-        const rect = calibrationArea.getBoundingClientRect();
-        calibrationPos.x = e.clientX / rect.width;
-        calibrationPos.y = e.clientY / rect.height;
-        updateMarkerPosition();
-      });
-
-      // Drag support for marker
-      let isDraggingMarker = false;
-      calibrationArea.addEventListener('mousedown', (e) => {
-        isDraggingMarker = true;
-      });
-
-      calibrationArea.addEventListener('mousemove', (e) => {
-        if (!isDraggingMarker) return;
-        const rect = calibrationArea.getBoundingClientRect();
-        calibrationPos.x = Math.max(0, Math.min(1, e.clientX / rect.width));
-        calibrationPos.y = Math.max(0, Math.min(1, e.clientY / rect.height));
-        updateMarkerPosition();
-        // Live preview
-        if (pngtuber) {
-          pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
-        }
-      });
-
-      calibrationArea.addEventListener('mouseup', () => {
-        isDraggingMarker = false;
-      });
-
-      // Scale slider
-      scaleSlider.addEventListener('input', (e) => {
-        calibrationScale = parseInt(e.target.value);
-        scaleValue.textContent = `${calibrationScale}%`;
-        mouthMarker.style.width = `${calibrationScale * 3}px`;
-        mouthMarker.style.height = `${calibrationScale * 3}px`;
-        // Live preview
-        if (pngtuber) {
-          pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
-        }
-      });
-
-      // Frame navigation controls
-      framePrev10.addEventListener('click', () => seekFrame(-10));
-      framePrev.addEventListener('click', () => seekFrame(-1));
-      frameNext.addEventListener('click', () => seekFrame(1));
-      frameNext10.addEventListener('click', () => seekFrame(10));
-
-      framePlay.addEventListener('click', toggleVideoPlay);
-
-      frameSlider.addEventListener('input', (e) => {
-        const frame = parseInt(e.target.value);
-        goToFrame(frame);
-      });
-
-      // Add keyframe button
-      addKeyframeBtn.addEventListener('click', addKeyframe);
-
-      // Save button
-      saveCalibration.addEventListener('click', () => {
-        saveCalibrationData();
-        closeCalibrationMode();
-      });
-
-      // Cancel button
-      cancelCalibration.addEventListener('click', () => {
-        closeCalibrationMode();
-        // Restore video playback
-        if (pngtuber && pngtuber.video) {
-          pngtuber.video.play();
-        }
-        // Reload tracking data
-        reloadTrackingData();
-      });
-
-      // Keyboard shortcuts
-      document.addEventListener('keydown', (e) => {
-        if (!isCalibrating) return;
-
-        switch(e.key) {
-          case 'ArrowLeft':
-            seekFrame(e.shiftKey ? -10 : -1);
-            e.preventDefault();
-            break;
-          case 'ArrowRight':
-            seekFrame(e.shiftKey ? 10 : 1);
-            e.preventDefault();
-            break;
-          case ' ':
-            toggleVideoPlay();
-            e.preventDefault();
-            break;
-          case 'k':
-          case 'K':
-            addKeyframe();
-            e.preventDefault();
-            break;
-        }
-      });
-    }
-
-    function openCalibrationMode() {
-      isCalibrating = true;
-      calibrationOverlay.classList.add('visible');
-
-      // Pause video for frame-by-frame control
-      if (pngtuber && pngtuber.video) {
-        pngtuber.video.pause();
-        isVideoPlaying = false;
-        framePlay.textContent = '▶';
-
-        // Calculate total frames
-        const duration = pngtuber.video.duration;
-        const fps = pngtuber.videoFPS || 30;
-        totalFrames = Math.floor(duration * fps);
-
-        // Setup frame slider
-        frameSlider.max = totalFrames - 1;
-        frameSlider.value = 0;
-
-        // Go to first frame
-        goToFrame(0);
-      }
-
-      // Load existing keyframes from tracking data
-      loadExistingKeyframes();
-
-      // Set initial marker position
-      if (pngtuber) {
-        calibrationPos = { ...pngtuber.mouthPosition };
-        calibrationScale = pngtuber.mouthScale * 100;
-      }
-
-      scaleSlider.value = calibrationScale;
-      scaleValue.textContent = `${Math.round(calibrationScale)}%`;
-      updateMarkerPosition();
-      updateKeyframeMarkers();
-    }
-
-    function closeCalibrationMode() {
-      isCalibrating = false;
-      calibrationOverlay.classList.remove('visible');
-
-      // Resume video playback
-      if (pngtuber && pngtuber.video) {
-        pngtuber.video.play();
-      }
-    }
-
-    function seekFrame(delta) {
-      const newFrame = Math.max(0, Math.min(totalFrames - 1, currentFrame + delta));
-      goToFrame(newFrame);
-    }
-
-    function goToFrame(frameIndex) {
-      if (!pngtuber || !pngtuber.video) return;
-
-      currentFrame = frameIndex;
-      const fps = pngtuber.videoFPS || 30;
-      const time = frameIndex / fps;
-
-      pngtuber.video.currentTime = time;
-      frameSlider.value = frameIndex;
-      frameInfo.textContent = `${frameIndex} / ${totalFrames - 1}`;
-
-      // Update mouth position based on interpolated keyframes
-      const interpolatedPos = getInterpolatedPosition(frameIndex);
-      calibrationPos.x = interpolatedPos.x;
-      calibrationPos.y = interpolatedPos.y;
-      calibrationScale = interpolatedPos.scale * 100;
-
-      scaleSlider.value = calibrationScale;
-      scaleValue.textContent = `${Math.round(calibrationScale)}%`;
-      updateMarkerPosition();
-
-      // Live preview
-      if (pngtuber) {
-        pngtuber.setMouthPosition(calibrationPos.x, calibrationPos.y, calibrationScale / 100);
-      }
-
-      // Highlight if this frame is a keyframe
-      if (keyframes[frameIndex]) {
-        addKeyframeBtn.classList.add('active');
-        addKeyframeBtn.textContent = '✓ Keyframe';
-      } else {
-        addKeyframeBtn.classList.remove('active');
-        addKeyframeBtn.textContent = '+ Keyframe';
-      }
-    }
-
-    function toggleVideoPlay() {
-      if (!pngtuber || !pngtuber.video) return;
-
-      if (isVideoPlaying) {
-        pngtuber.video.pause();
-        framePlay.textContent = '▶';
-      } else {
-        pngtuber.video.play();
-        framePlay.textContent = '⏸';
-        // Update frame position during playback
-        requestAnimationFrame(updateFrameDuringPlayback);
-      }
-      isVideoPlaying = !isVideoPlaying;
-    }
-
-    function updateFrameDuringPlayback() {
-      if (!isVideoPlaying || !isCalibrating) return;
-
-      const fps = pngtuber.videoFPS || 30;
-      currentFrame = Math.floor(pngtuber.video.currentTime * fps);
-      frameSlider.value = currentFrame;
-      frameInfo.textContent = `${currentFrame} / ${totalFrames - 1}`;
-
-      requestAnimationFrame(updateFrameDuringPlayback);
-    }
-
-    function addKeyframe() {
-      // Toggle keyframe at current frame
-      if (keyframes[currentFrame]) {
-        // Remove keyframe
-        delete keyframes[currentFrame];
-        addKeyframeBtn.classList.remove('active');
-        addKeyframeBtn.textContent = '+ Keyframe';
-      } else {
-        // Add keyframe with current position
-        keyframes[currentFrame] = {
-          x: calibrationPos.x,
-          y: calibrationPos.y,
-          scale: calibrationScale / 100
-        };
-        addKeyframeBtn.classList.add('active');
-        addKeyframeBtn.textContent = '✓ Keyframe';
-      }
-
-      updateKeyframeMarkers();
-      keyframeCount.textContent = `${Object.keys(keyframes).length} keys`;
-    }
-
-    function updateKeyframeMarkers() {
-      keyframeMarkers.innerHTML = '';
-      const keys = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
-
-      keys.forEach(frame => {
-        const dot = document.createElement('div');
-        dot.className = 'keyframe-dot';
-        dot.style.left = `${(frame / (totalFrames - 1)) * 100}%`;
-        dot.title = `Frame ${frame}`;
-        keyframeMarkers.appendChild(dot);
-      });
-
-      keyframeCount.textContent = `${keys.length} keys`;
-    }
-
-    function getInterpolatedPosition(frameIndex) {
-      const keys = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
-
-      if (keys.length === 0) {
-        // No keyframes, return default
-        return { x: 0.5, y: 0.7, scale: 0.15 };
-      }
-
-      if (keys.length === 1) {
-        // Only one keyframe, use it for all frames
-        return keyframes[keys[0]];
-      }
-
-      // Find surrounding keyframes
-      let prevKey = null;
-      let nextKey = null;
-
-      for (let i = 0; i < keys.length; i++) {
-        if (keys[i] <= frameIndex) {
-          prevKey = keys[i];
-        }
-        if (keys[i] >= frameIndex && nextKey === null) {
-          nextKey = keys[i];
-        }
-      }
-
-      // Handle edge cases
-      if (prevKey === null) {
-        // Before first keyframe - also check wrap-around
-        const lastKey = keys[keys.length - 1];
-        const firstKey = keys[0];
-
-        // Interpolate from last keyframe (wrapping around)
-        const wrapDistance = (totalFrames - lastKey) + frameIndex;
-        const totalDistance = (totalFrames - lastKey) + firstKey;
-        const t = wrapDistance / totalDistance;
-
-        return interpolateKeyframes(keyframes[lastKey], keyframes[firstKey], t);
-      }
-
-      if (nextKey === null) {
-        // After last keyframe - wrap to first
-        const lastKey = keys[keys.length - 1];
-        const firstKey = keys[0];
-
-        const wrapDistance = frameIndex - lastKey;
-        const totalDistance = (totalFrames - lastKey) + firstKey;
-        const t = wrapDistance / totalDistance;
-
-        return interpolateKeyframes(keyframes[lastKey], keyframes[firstKey], t);
-      }
-
-      if (prevKey === nextKey) {
-        // Exact match
-        return keyframes[prevKey];
-      }
-
-      // Interpolate between prev and next
-      const t = (frameIndex - prevKey) / (nextKey - prevKey);
-      return interpolateKeyframes(keyframes[prevKey], keyframes[nextKey], t);
-    }
-
-    function interpolateKeyframes(a, b, t) {
-      // Smooth interpolation using ease-in-out
-      const smoothT = t * t * (3 - 2 * t);
-
-      return {
-        x: a.x + (b.x - a.x) * smoothT,
-        y: a.y + (b.y - a.y) * smoothT,
-        scale: a.scale + (b.scale - a.scale) * smoothT
-      };
-    }
-
-    function loadExistingKeyframes() {
-      keyframes = {};
-
-      // Try to load from existing tracking.json
-      const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
-      if (fs.existsSync(trackingPath)) {
-        try {
-          const data = JSON.parse(fs.readFileSync(trackingPath, 'utf8'));
-
-          if (data.keyframes) {
-            // Load keyframe data
-            keyframes = data.keyframes;
-          } else if (data.mouth) {
-            // Convert static position to keyframe at frame 0
-            keyframes[0] = {
-              x: data.mouth.x,
-              y: data.mouth.y,
-              scale: data.mouth.scale
-            };
-          }
-        } catch (e) {
-          console.log('Error loading existing keyframes:', e);
-        }
-      }
-
-      updateKeyframeMarkers();
-    }
-
-    function updateMarkerPosition() {
-      const rect = calibrationArea.getBoundingClientRect();
-      mouthMarker.style.left = `${calibrationPos.x * rect.width}px`;
-      mouthMarker.style.top = `${calibrationPos.y * rect.height}px`;
-      mouthMarker.style.width = `${calibrationScale * 3}px`;
-      mouthMarker.style.height = `${calibrationScale * 3}px`;
-    }
-
-    function saveCalibrationData() {
-      const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
-      const keys = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
-
-      let trackingData;
-
-      if (keys.length > 1) {
-        // Multiple keyframes - save for per-frame interpolation
-        // Generate full frame data by interpolating all frames
-        const frames = [];
-        const fps = pngtuber?.videoFPS || 30;
-
-        for (let i = 0; i < totalFrames; i++) {
-          const pos = getInterpolatedPosition(i);
-          // Store as quad format (4 corners) for compatibility
-          const w = pos.scale * (pngtuber?.video?.videoWidth || 640);
-          const h = w * 0.5; // Assume mouth height is half of width
-          const cx = pos.x * (pngtuber?.video?.videoWidth || 640);
-          const cy = pos.y * (pngtuber?.video?.videoHeight || 480);
-
-          frames.push([
-            { x: cx - w/2, y: cy - h/2 },  // top-left
-            { x: cx + w/2, y: cy - h/2 },  // top-right
-            { x: cx + w/2, y: cy + h/2 },  // bottom-right
-            { x: cx - w/2, y: cy + h/2 }   // bottom-left
-          ]);
-        }
-
-        trackingData = {
-          keyframes: keyframes,
-          frames: frames,
-          fps: fps,
-          totalFrames: totalFrames,
-          videoWidth: pngtuber?.video?.videoWidth || 640,
-          videoHeight: pngtuber?.video?.videoHeight || 480,
-          savedAt: new Date().toISOString()
-        };
-      } else {
-        // Single or no keyframe - save as static position
-        const pos = keys.length === 1 ? keyframes[keys[0]] : { x: calibrationPos.x, y: calibrationPos.y, scale: calibrationScale / 100 };
-
-        trackingData = {
-          mouth: {
-            x: pos.x,
-            y: pos.y,
-            scale: pos.scale
-          },
-          keyframes: keyframes,
-          savedAt: new Date().toISOString()
-        };
-      }
-
-      try {
-        fs.writeFileSync(trackingPath, JSON.stringify(trackingData, null, 2));
-        console.log('Calibration saved:', trackingData);
-
-        // Reload tracking data to apply changes
-        reloadTrackingData();
-
-        // Show success feedback
-        const keyCount = keys.length;
-        showCalibrationFeedback(keyCount > 1
-          ? `✓ Guardado: ${keyCount} keyframes (tracking dinámico)`
-          : '✓ Posición guardada');
-      } catch (e) {
-        console.error('Error saving calibration:', e);
-        showCalibrationFeedback('✗ Error al guardar');
-      }
-    }
-
-    async function reloadTrackingData() {
-      if (pngtuber) {
-        const videoWidth = pngtuber.video?.videoWidth || 640;
-        const videoHeight = pngtuber.video?.videoHeight || 480;
-        await pngtuber.loadTrackingData(videoWidth, videoHeight);
-      }
-    }
-
-    function loadTrackingData() {
-      const trackingPath = path.join(__dirname, '../../assets/pngtuber/tracking.json');
-      if (fs.existsSync(trackingPath)) {
-        try {
-          const tracking = JSON.parse(fs.readFileSync(trackingPath, 'utf8'));
-          if (tracking.mouth && pngtuber) {
-            pngtuber.setMouthPosition(
-              tracking.mouth.x,
-              tracking.mouth.y,
-              tracking.mouth.scale
-            );
-          }
-          console.log('Loaded tracking data');
-        } catch (e) {
-          console.log('Error loading tracking data:', e);
-        }
-      }
-    }
-
-    function showCalibrationFeedback(message) {
-      const feedback = document.createElement('div');
-      feedback.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 15px 25px;
-        border-radius: 10px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        z-index: 2000;
-        animation: fadeInOut 2s ease;
-      `;
-      feedback.textContent = message;
-      document.body.appendChild(feedback);
-
-      setTimeout(() => feedback.remove(), 2000);
-    }
-
-    // Add animation keyframes
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes fadeInOut {
-        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-        20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-      }
-    `;
-    document.head.appendChild(style);
-
     // ============================================
     // INITIALIZE
     // ============================================
@@ -2238,11 +1556,10 @@
         }
       }
 
-      // Initialize chat, drag, calibration, and settings menu
+      // Initialize chat, drag, and settings menu
       initChat();
       setupDragControls();
       initSettingsMenu();
-      initCalibration();
 
       console.log('PNGTuber Avatar ready!');
     }
