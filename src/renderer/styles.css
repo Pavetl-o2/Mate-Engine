@@ -240,6 +240,7 @@ html, body {
   color: rgba(255,255,255,0.4);
 }
 
+#chat-voice,
 #chat-send {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
@@ -252,19 +253,32 @@ html, body {
   transition: transform 0.2s, opacity 0.2s;
 }
 
+#chat-voice:hover,
 #chat-send:hover {
   transform: scale(1.05);
 }
 
+#chat-voice:disabled,
 #chat-send:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+#chat-voice svg,
 #chat-send svg {
   width: 16px;
   height: 16px;
   fill: white;
+}
+
+#chat-voice.recording {
+  background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+  animation: pulse-recording 1s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 /* Loading indicator */
