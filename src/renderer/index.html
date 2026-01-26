@@ -39,7 +39,7 @@
     <div id="chat-box">
       <div id="chat-messages"></div>
       <div id="chat-input-container">
-        <input type="text" id="chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
+        <input type="text" id="chat-input" placeholder="Type here..." autocomplete="off">
         <button id="chat-send">
           <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
@@ -312,6 +312,17 @@
       msg.textContent = text;
       chatMessages.appendChild(msg);
       chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      // Auto fade-out after 15 seconds
+      setTimeout(() => {
+        msg.classList.add('fading');
+        // Remove from DOM after fade animation completes
+        setTimeout(() => {
+          if (msg.parentNode) {
+            msg.parentNode.removeChild(msg);
+          }
+        }, 1500); // Wait for fade + collapse animation
+      }, 15000); // 15 seconds before starting fade
     }
 
     function showLoading() {

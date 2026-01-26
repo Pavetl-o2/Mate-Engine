@@ -23,8 +23,8 @@ const configPath = path.join(app.getPath('userData'), 'avatar-config.json');
 
 // Avatar settings
 const AVATAR_CONFIG = {
-  width: 400,
-  height: 450,
+  width: 420,
+  height: 360,
   defaultX: null,
   defaultY: null
 };

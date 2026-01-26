@@ -69,6 +69,9 @@ class CalibradorBoca:
         self.drag_start = None
         self.last_mouse = None
 
+        # Escala de visualización (0.5 = 50% del tamaño)
+        self.display_scale = 0.5
+
     def _load_track(self):
         """Cargar datos de tracking."""
         with open(self.track_path, "r", encoding="utf-8") as f:
@@ -178,28 +181,32 @@ class CalibradorBoca:
 
     def _mouse_callback(self, event, x, y, flags, param):
         """Callback de eventos de mouse."""
+        # Convertir coordenadas del mouse al espacio original
+        x_orig = x / self.display_scale
+        y_orig = y / self.display_scale
+
         if event == cv2.EVENT_LBUTTONDOWN:
             self.is_dragging = True
-            self.drag_start = (x, y)
-            self.last_mouse = (x, y)
+            self.drag_start = (x_orig, y_orig)
+            self.last_mouse = (x_orig, y_orig)
 
         elif event == cv2.EVENT_RBUTTONDOWN:
             self.is_rotating = True
-            self.drag_start = (x, y)
-            self.last_mouse = (x, y)
+            self.drag_start = (x_orig, y_orig)
+            self.last_mouse = (x_orig, y_orig)
 
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.is_dragging and self.last_mouse:
-                dx = x - self.last_mouse[0]
-                dy = y - self.last_mouse[1]
+                dx = x_orig - self.last_mouse[0]
+                dy = y_orig - self.last_mouse[1]
                 self.offset_x += dx
                 self.offset_y += dy
-                self.last_mouse = (x, y)
+                self.last_mouse = (x_orig, y_orig)
 
             elif self.is_rotating and self.last_mouse:
-                dx = x - self.last_mouse[0]
+                dx = x_orig - self.last_mouse[0]
                 self.rotation += dx * 0.3
-                self.last_mouse = (x, y)
+                self.last_mouse = (x_orig, y_orig)
 
         elif event == cv2.EVENT_LBUTTONUP:
             self.is_dragging = False
@@ -273,7 +280,12 @@ class CalibradorBoca:
                     self.current_frame = 0
                     continue
 
-                cv2.imshow(self.WINDOW_NAME, frame)
+                # Redimensionar para visualización
+                display_h = int(frame.shape[0] * self.display_scale)
+                display_w = int(frame.shape[1] * self.display_scale)
+                display_frame = cv2.resize(frame, (display_w, display_h), interpolation=cv2.INTER_AREA)
+
+                cv2.imshow(self.WINDOW_NAME, display_frame)
 
                 key = cv2.waitKey(30) & 0xFF
 
